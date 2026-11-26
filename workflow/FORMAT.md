@@ -16,6 +16,8 @@ Les valeurs propres au projet sont dans `.claude/workflow.yml`, lues par `yq` (`
 
 **Modules** : `modules` de la config liste les parties optionnelles du workflow (`maestro`, `simulator`, `translations`, `crash_reporter`, `poc`). Une étape optionnelle d'un skill commence par sa condition, « Module `<m>`. ». Module `false`, `none` ou absent : l'étape est sautée, sans message ni question, et la section de la règle dit ce qui la remplace. Une valeur autre que `true` nomme le service (`poeditor`, `crashlytics`). Un skill dont tout le rôle dépend d'un module absent s'arrête dès son début, avec un message qui nomme le module.
 
+**Contenu du paquet** : les fichiers du paquet ne citent aucun nom, aucune valeur et aucun exemple d'un projet qui l'utilise : clé de ticket, nom d'une personne, identifiant de compte, nom ou chemin de l'app. Une valeur propre au projet va dans `.claude/workflow.yml`. Un fait propre au projet va dans ses memories ou ses fichiers locaux. Les exemples prennent des valeurs neutres (`APP-1234`, `com.example.app`).
+
 ## Emplacement
 
 `<racine du repo>/docs/tickets/<slug>/`

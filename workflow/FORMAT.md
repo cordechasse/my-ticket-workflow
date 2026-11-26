@@ -129,7 +129,7 @@ release/1.4.2 │ staging 1.4.2 : build                         (skill de versio
 
 Format de `docs/COMMITS.md` (Conventional Commits, clé `#<clé>` en fin de sujet). Fichiers de session : `docs(ticket): démarrage|pause|clôture, …`. Procédure commune aux skills :
 - Commit seulement après un « oui » explicite (AskUserQuestion). Le push revient aux seuls skills qui le prévoient (`ticket-close`, `version-*`), après un accord à part.
-- Sujet mesuré avant d'être montré : `scripts/commit-msg-hook.sh /dev/stdin <<'EOF'`, le message, `EOF`. Sujet signalé trop long (code 1, ou avertissement d'un ancien script) : Claude raccourcit le sujet et mesure à nouveau, sans le dire. Seul un sujet conforme est montré à l'utilisateur.
+- Sujet mesuré avant d'être montré : `.claude/scripts/commit-msg-hook.sh /dev/stdin <<'EOF'`, le message, `EOF`. Sujet signalé trop long (code 1, ou avertissement d'un ancien script) : Claude raccourcit le sujet et mesure à nouveau, sans le dire. Seul un sujet conforme est montré à l'utilisateur.
 - Commit refusé par le hook après le « oui » : Claude raccourcit le sujet, relance `git commit` sans redemander, puis montre le sujet final. Rien n'a été créé, donc pas d'amend.
 - Chemins explicites (`git add <chemins>`), puis `git diff --cached --stat` relu. Les fichiers que `TICKET.md` marque « ne jamais commiter » (override local…) restent hors du commit, et c'est signalé.
 - Un `git commit` par appel, code de sortie et `git log -1` vérifiés avant le suivant.
@@ -405,7 +405,7 @@ Un formulaire (AskUserQuestion) s'ouvre en fin de tour, après le texte complet 
 2. **Plan au plus simple** : le plan le plus direct qui remplit les critères d'acceptation. Un ajout absent du plan (type, protocole, helper, paramètre, fichier) est signalé en une ligne, avec sa raison, et attend l'accord avant d'être écrit.
 3. **Après chaque modification** : un bloc `diff` dans la réponse (`git diff -- <fichier>`). Fichier créé : un bloc dans le langage du fichier. Au-delà de 40 lignes, seuls les hunks qui portent le changement, le reste nommé en une ligne.
 4. **Étapes** : cochées au fil des réponses, dans la réponse et dans « Lots ».
-5. **Test manuel** : proposé ou cité selon `.claude/rules/manual-tests.md`. Jamais l'identifiant seul.
+5. **Test manuel** : proposé ou cité selon `.claude/rules/paquet/manual-tests.md`. Jamais l'identifiant seul.
 6. **Au fil de l'eau** : un sujet tranché ou ajouté s'écrit tout de suite dans « Sujets analysés », une clé de traduction dans « Traductions », le résultat d'un test manuel donné par l'utilisateur dans « Tests ». Ils survivent ainsi à une compaction de la conversation.
 7. **Hors route** : une demande hors du périmètre est signalée en une ligne, avec le choix : l'intégrer (avec un sujet), la noter dans « À ne pas oublier », ou la faire sans trace.
 8. **Fin de lot** : le bloc ci-dessous dans la réponse, puis « Statut » et la ligne du lot (après son commit) dans `TICKET.md`. Les questions (commit du lot, lot suivant) viennent après le bloc.
@@ -414,7 +414,7 @@ Un formulaire (AskUserQuestion) s'ouvre en fin de tour, après le texte complet 
 Parcours     : chaîne des lots, ✓ sur le lot fini, ▶ sur le suivant
 Changements  : git diff --stat du lot, puis le diff clé de chaque fichier
 Tests        : verts / rouges / à faire par l'utilisateur (tableau d'annonce,
-               .claude/rules/manual-tests.md)
+               .claude/rules/paquet/manual-tests.md)
 À toi        : <une seule action>
 /clear       : possible | pas encore — <raison>
 ticket-close : possible | pas encore — <raison>

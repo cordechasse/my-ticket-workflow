@@ -20,6 +20,9 @@
 
 set -euo pipefail
 
+# Bash 3.2 de macOS : avec `set -u`, "${tab[@]}" d'un tableau vide échoue. Les tableaux se
+# développent donc par "${tab[@]+"${tab[@]}"}", sans mapfile ni tableau associatif (bash 4).
+
 # Fichiers du dépôt du paquet qui ne vont jamais dans un projet.
 EXCLUDED_FILES=(LICENSE README.md)
 

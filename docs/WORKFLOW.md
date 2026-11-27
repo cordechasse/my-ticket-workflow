@@ -289,5 +289,5 @@ Le paquet ne contient ni la configuration du projet, ni l'état de ses services.
 4. **Tags de build** : la CI pose un tag au gabarit `releases.build_tag` sur chaque build.
 5. **Versions publiées** : `app-store-connect` demande la lane `app_store_versions` et sa clé d'API. `git-tags` demande le tag `vX.Y.Z` sur chaque version publiée qui a encore sa `release/*` sur origin : sans lui, elle passe pour ouverte.
 6. **Numéro de version** : `releases.version_file` contient la ligne `releases.version_line`.
-7. **Hook `commit-msg`** : `.claude/scripts/commit-msg-hook.sh` copié dans `.git/hooks/commit-msg` par l'installation du projet.
+7. **Hook `commit-msg`** : `.claude/scripts/commit-msg-relay.sh` copié dans le dossier des hooks (`git rev-parse --git-path hooks`) par l'installation du projet. Le relais lance le hook du paquet de la branche courante (README du paquet § « Installation »).
 8. **Fichiers locaux** : les memories citées par le paquet (SKILLS § « Fichiers de référence »), et `SKILLS-LOCAL.md`, cité par le `CLAUDE.md` du projet.

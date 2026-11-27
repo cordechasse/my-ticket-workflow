@@ -52,8 +52,17 @@ qui ignore `vendor/` (gems) ignore aussi le paquet : ajouter `!.claude/vendor/` 
 
 2. Déclarer les entrées de `.claude/settings.json` (§ « Réglages »).
 3. Écrire `.claude/workflow.yml` (§ « Configuration »).
-4. Copier `.claude/scripts/commit-msg-hook.sh` dans `.git/hooks/commit-msg`, dans l'installation
-   du projet (`make setup`, par exemple), après l'étape 5 qui crée le lien `.claude/scripts`.
+4. Installer le relais du hook `commit-msg` dans le dossier des hooks, commun aux worktrees. Le
+   relais lance `.claude/scripts/commit-msg-hook.sh` du worktree courant : chaque branche suit sa
+   version du paquet, sans recopie à chaque montée. L'installation du projet (`make setup`, par
+   exemple) refait ce geste :
+
+   ```sh
+   hooks=$(git rev-parse --git-path hooks)
+   cp .claude/vendor/my-ticket-workflow/scripts/commit-msg-relay.sh "$hooks/commit-msg"
+   chmod +x "$hooks/commit-msg"
+   ```
+
 5. Créer les liens relatifs, puis contrôler l'installation (§ « Liens », § « Contrôle ») :
 
    ```sh
@@ -182,7 +191,8 @@ et une ligne par écart. Il contrôle :
 - la config contre le schéma (clé requise absente, clé inconnue, valeur hors liste) et
   l'adaptateur de chaque service désigné
 - la status line et chaque hook du paquet déclarés dans `.claude/settings.json`
-- les liens (`link.sh --check`), les memories citées par le paquet, le hook `commit-msg` installé
+- les liens (`link.sh --check`), les memories citées par le paquet, le relais du hook
+  `commit-msg` installé
 - la copie du paquet : ni `CLAUDE.md` ni `AGENTS.md`, aucune édition commitée dans le projet et
   pas encore renvoyée, commit d'origine égal au tag de `VERSION` (dépôt du paquet lu par
   `git ls-remote`, contrôle sauté hors réseau avec une ligne d'information)

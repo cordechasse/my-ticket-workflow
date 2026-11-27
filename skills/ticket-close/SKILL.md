@@ -329,7 +329,7 @@ Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEA
 
 1. **Version** : `X.Y.Z` depuis `<préfixe>/VERSION`, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste). Entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Commit du paquet seul : `docs: version X.Y.Z`.
 2. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis les gestes des points 3 à 5. Refus : la clôture s'arrête avant la fusion, rien n'est poussé.
-3. **Renvoi** : `git subtree push --prefix <préfixe> <url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet.
+3. **Renvoi** : `git subtree push -q --prefix <préfixe> <url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet. `-q` coupe la progression, une ligne par commit du projet parcouru (environ 20 s pour 4 000 commits).
 4. **Publication**, dans un clone temporaire du paquet :
    ```bash
    pkg=$(mktemp -d -t paquet) && git clone -q <url> "$pkg" && echo "pkg=$pkg"
@@ -339,7 +339,7 @@ Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEA
    git -C "$pkg" push origin --delete <branche>
    ```
    Conflit (le paquet a reçu la version d'un autre projet) : `git -C "$pkg" merge --abort`, arrêt, clone gardé et fichiers présentés. Fin : `rm -rf "$pkg"`.
-5. **Retour** : `git subtree pull --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`. Le contrôle est muet, sauf le hook `commit-msg` du checkout, que le `make setup` (ou l'équivalent du projet) recopie après la fusion.
+5. **Retour** : `git subtree pull -q --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`. Le contrôle est muet, sauf le hook `commit-msg` du checkout, que le `make setup` (ou l'équivalent du projet) recopie après la fusion.
 
 ## 8. Intégration
 

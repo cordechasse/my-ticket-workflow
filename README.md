@@ -40,7 +40,8 @@ atteints par les liens.
 
 ## Installation dans un projet
 
-Depuis la racine du projet, dans une branche d'outillage, working tree propre :
+Depuis la racine du projet, dans une branche d'outillage, working tree propre. Un `.gitignore`
+qui ignore `vendor/` (gems) ignore aussi le paquet : ajouter `!.claude/vendor/` après sa règle.
 
 1. Ajouter le paquet à sa dernière version :
 

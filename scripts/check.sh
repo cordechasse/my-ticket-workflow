@@ -155,6 +155,12 @@ fi
 
 # --- Copie du paquet ---
 
+# Un `.gitignore` qui ignore `vendor/` (gems) ignore aussi le paquet : un fichier ajouté au paquet
+# depuis le projet ne serait pas suivi.
+if git check-ignore -q --no-index "$PREFIX/VERSION"; then
+	report "Paquet ignoré par un .gitignore : ajouter !.claude/vendor/ (README § « Installation »)."
+fi
+
 for file in $(find "$PREFIX" -name CLAUDE.md -o -name AGENTS.md); do
 	report "Fichier chargé par Claude Code dans le paquet : $file (README § « Contenu »)."
 done

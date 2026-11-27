@@ -144,14 +144,15 @@ Avertissement, sans arrêt : une version à ouvrir plus basse que X.Y.Z existe. 
 
 **Confirmation**, un seul formulaire avant toute écriture : version, base (sha court, sujet, date), commit de bump `chore(release): X.Y.Z` (ligne de version) et push sur origin. Il vaut accord pour la création et pour le push. Refus : rien n'est créé.
 
-**Branche et bump**, en un seul appel Bash, `file` et `line` recopiés de `releases.version_file` et `releases.version_line` :
+**Branche et bump**, en un seul appel Bash, `file` et `line` recopiés de `releases.version_file` et `releases.version_line`. Une ligne de version commence par `line`, après une indentation éventuelle, et porte le numéro en chiffres et en points. Le fichier peut en contenir plusieurs (une par configuration de build). Le bump remplace le numéro de chacune et garde la suite de la ligne (`;`, commentaire). Il échoue si le fichier n'a aucune ligne de version, ou si l'une d'elles ne porte pas la nouvelle version (numéro écrit autrement qu'en chiffres) :
 
 ```bash
 v=X.Y.Z base=<base> file='<releases.version_file>' line='<releases.version_line>'
 wt=$(mktemp -d -t "release-$v")
 git worktree add -q --no-track -b "release/$v" "$wt" "$base"
-sed -i '' -E "s/^${line}.*/${line}${v}/" "$wt/$file"
-[ "$(rg -c "^${line}${v}$" "$wt/$file")" = 1 ] || { echo "ÉCHEC : ligne de version non mise à jour"; exit 1; }
+sed -i '' -E "s/^([[:space:]]*${line})[0-9]+(\.[0-9]+)*/\1${v}/" "$wt/$file"
+all=$(rg -c "^[[:space:]]*${line}" "$wt/$file"); new=$(rg -c "^[[:space:]]*${line}${v}([^0-9.]|$)" "$wt/$file")
+[ -n "$all" ] && [ "$all" = "$new" ] || { echo "ÉCHEC : ligne de version non mise à jour"; exit 1; }
 git -C "$wt" commit -q -am "chore(release): $v"
 echo "wt=$wt"; git -C "$wt" log -1 --stat --format='%h %s'
 ```

@@ -5,7 +5,7 @@
 # montée de version ou une édition du paquet (README § « Contrôle ») :
 # - config `.claude/workflow.yml` contre `workflow/config-schema.yml`, adaptateurs désignés
 # - status line et hooks du paquet déclarés dans `.claude/settings.json`
-# - liens (`link.sh --check`), memories citées par le paquet, hook `commit-msg` installé
+# - liens (`link.sh --check`), memories citées par le paquet, relais du hook `commit-msg` installé
 # - copie du paquet : ni `CLAUDE.md` ni `AGENTS.md`, aucune édition locale non renvoyée, commit
 #   d'origine égal au tag de `VERSION`
 # - fichiers locaux du projet : chemins `.claude/…` et `docs/…` et skills cités qui n'existent pas.
@@ -164,9 +164,10 @@ done < <(grep -rhoE '`(reference|feedback|project|user)_[a-z0-9_]+`' "$PREFIX" |
 
 # --- Hook commit-msg ---
 
+# Le relais est commun aux worktrees et lance le hook de la branche : seul lui est comparé.
 hook_path=$(git rev-parse --path-format=absolute --git-path hooks/commit-msg)
-if ! cmp -s "$hook_path" "$PREFIX/scripts/commit-msg-hook.sh"; then
-	report "Hook commit-msg absent ou différent de .claude/scripts/commit-msg-hook.sh : $hook_path."
+if ! cmp -s "$hook_path" "$PREFIX/scripts/commit-msg-relay.sh"; then
+	report "Hook commit-msg absent ou différent de .claude/scripts/commit-msg-relay.sh : $hook_path."
 fi
 
 # --- Copie du paquet ---

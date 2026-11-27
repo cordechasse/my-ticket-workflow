@@ -363,7 +363,7 @@ Sans flow, la section porte à la place 3 lignes :
 
 « Traductions » : module `translations`. Sans lui, la section porte `N/A — module translations absent`, sans relevé ni liste au lecteur.
 
-Création d'un terme, tags, export et branche abandonnée : fichier `translations.rules` de la config.
+Création d'un terme, tags, export, branche abandonnée et liste des traductions du commentaire au lecteur (`ticket-close`, étape 5) : fichier `translations.rules` de la config.
 
 « Traductions » informe le lecteur des textes à valider ou traduire. Elle est tenue au fil de l'eau, dès qu'une clé est ajoutée, modifiée ou supprimée, et couvre toute la branche, toutes sessions confondues :
 - une ligne par clé : usage (écran, contexte), texte dans chaque langue (avant → après pour une modification), statut, sujet lié (`Sn`)

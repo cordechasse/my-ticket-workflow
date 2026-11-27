@@ -192,7 +192,7 @@ Avant de rédiger, reprends les commentaires du ticket lus à l'étape 2. Chaque
 Sources, sans recherche dans l'historique git :
 - étapes de reproduction : flows de `maestro/`, section « Reproduction », tests `(recette)`
 - « Ce qui change » d'une `Task` : « Objectif et périmètre » et tests `(recette)`
-- module `translations` : traductions à compléter, « Traductions » de « Notes »
+- module `translations` : liste des traductions, « Traductions » de « Notes »
 - demandes non livrées : tableau de conformité de l'étape 2.
 
 Le commentaire commence par le paragraphe `# Statut`, de texte `En attente de livraison`. Le skill de build staging puis `version-close` remplacent ce texte au fil des livraisons (RULES § « Statuts », « Remplacer un statut »). Le contenu suit sous `# Évolutions/Corrections`.
@@ -288,7 +288,7 @@ La raison d'une exclusion vient de sa source (sujet tranché, commentaire du tic
 
 Le commentaire ne contient ni parcours de non-régression, ni décisions, ni reste à faire hors « Non livré ». Ces points sont le travail du développeur et restent dans le message de clôture. Il ne pose aucune question : tout est décidé avant la clôture. Une question encore ouverte est un reste à faire du formulaire 1.
 
-« Nouvelles traductions à compléter dans POEditor » : module `translations` (`poeditor`). Facultatif : seulement dans la section du problème qui ajoute des clés à traduire par le lecteur (« Traductions » de « Notes »). Une ligne par clé. C'est la seule liste des textes à traduire côté iOS (fichier `translations.rules` de la config, liste destinée au lecteur).
+Liste des traductions : module `translations` (`poeditor`). C'est la seule liste des textes destinée au lecteur, une ligne par clé. Par défaut, elle porte le titre « Nouvelles traductions à compléter dans POEditor », les colonnes du modèle ci-dessus, et les clés à traduire par le lecteur. Le fichier `translations.rules` de la config peut la redéfinir dans son § « Liste pour le lecteur » : titre, colonnes et clés listées. Facultative : seulement dans la section du problème qui a au moins une clé listée (« Traductions » de « Notes »).
 
 ## 6. Audit
 
@@ -298,7 +298,7 @@ Le commentaire ne contient ni parcours de non-régression, ni décisions, ni res
 - [ ] Module `translations` : « Traductions » couvre chaque clé du relevé du script (FORMAT § « Traductions »), et chaque langue non traduite est aussi dans « Non fait ».
 - [ ] Les commentaires de code et le commentaire au lecteur respectent leurs règles (étapes 3 et 5).
 - [ ] Le commentaire au lecteur commence par `# Statut` et `En attente de livraison`, puis `# Évolutions/Corrections` avec une section par problème corrigé (« Livré », puis « Recette » au format de son cas), ou `## Ce qui change` pour une `Task` sans défaut, puis `# Non livré` s'il y a lieu, et rien d'autre.
-- [ ] Module `translations` : chaque clé à traduire par le lecteur est dans « Nouvelles traductions à compléter dans POEditor » de sa section.
+- [ ] Module `translations` : chaque clé de la liste des traductions (étape 5, défaut ou § « Liste pour le lecteur » de `translations.rules`) est dans cette liste, dans sa section.
 - [ ] Ticket `Bug` : chaque flow de reproduction est vert au rejeu de l'étape 1, sinon il est dans « Non fait », comme le rejeu non fait et le bug non reproduit. Un correctif `Sans test unitaire` est dans « Non fait », avec sa raison.
 - [ ] Revue (étape 2) : chaque exigence partielle, absente ou exclue, chaque constat non corrigé et chaque vérification ciblée non faite est dans « Non fait ». Une revue sautée pour un lot sans `✓` y est aussi. Chaque demande venue du ticket et non livrée est aussi sous `# Non livré` du commentaire au lecteur.
 

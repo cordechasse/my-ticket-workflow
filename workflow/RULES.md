@@ -311,7 +311,7 @@ git log <ref> --format='%H %s' | rg -e '#<clé>([^0-9]|$)'
 
 ## Ticket sans modification de l'app
 
-Cause serveur, analyse seule : aucun commit du ticket sur `<ref>` ne touche le code de l'app. Le code exclut l'outillage et les fichiers de session, comme `scripts/build-fingerprint.sh` : `docs/`, `.claude/` et `maestro/`. La clé se cherche dans le sujet seul, comme au § « Ticket intégré sur une ref » : un corps, ou le sujet d'un autre ticket, peut citer la clé.
+Cause serveur, analyse seule : aucun commit du ticket sur `<ref>` ne touche le code de l'app. Le code exclut l'outillage et les fichiers de session, comme `.claude/scripts/build-fingerprint.sh` : `docs/`, `.claude/` et `maestro/`. La clé se cherche dans le sujet seul, comme au § « Ticket intégré sur une ref » : un corps, ou le sujet d'un autre ticket, peut citer la clé.
 
 ```bash
 p='<tracker.key_prefix>' n=<numéro>

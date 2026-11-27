@@ -13,9 +13,11 @@ rend visible à Claude Code par des liens relatifs. Il garde sa configuration
 
 ```text
 workflow/FORMAT.md, RULES.md     règles communes aux skills
+workflow/config-schema.yml       clés permises de .claude/workflow.yml, lu par check.sh
 workflow/adapters/               geste propre à un service (Jira, GitHub, Bitbucket…)
 skills/                          ticket-*, chore, version-*, show-diff
-scripts/, hooks/                 status line, phase, onglet herdr, hook commit-msg, memories
+scripts/, hooks/                 status line, phase, onglet herdr, hook commit-msg, memories,
+                                 link.sh (liens du projet), check.sh (contrôle de l'installation)
 rules/manual-tests.md            protocole des tests manuels
 docs/SKILLS.md, WORKFLOW.md, COMMITS.md  usage des skills, cycle git, format des commits
 VERSION, CHANGELOG.md            version du paquet, migration de chaque version
@@ -29,7 +31,7 @@ atteints par les liens.
 
 ## Prérequis
 
-- Claude Code, `git`, `bash`, `jq`, `yq` (v4), `ruby` (relevé des traductions).
+- Claude Code, `git`, `bash`, `jq`, `yq` de mikefarah en v4, `ruby` (relevé des traductions).
 - Tracker : MCP Atlassian (Jira), ou MCP GitHub et `GITHUB_PERSONAL_ACCESS_TOKEN` (issues GitHub).
 - Projet iOS : MobileBuildMCP (builds, simulateur dédié) et Xcode.
 - Modules optionnels (`modules` de la config) : Maestro (`maestro`), Crashlytics par le MCP
@@ -47,16 +49,25 @@ Depuis la racine du projet, dans une branche d'outillage, working tree propre :
      git@github.com:cordechasse/my-ticket-workflow.git v1.0.0 --squash
    ```
 
-2. Créer les 18 liens relatifs (§ « Liens »).
-3. Déclarer les entrées de `.claude/settings.json` (§ « Réglages »).
+2. Déclarer les entrées de `.claude/settings.json` (§ « Réglages »).
+3. Écrire `.claude/workflow.yml` (§ « Configuration »).
 4. Copier `.claude/scripts/commit-msg-hook.sh` dans `.git/hooks/commit-msg`, dans l'installation
-   du projet (`make setup`, par exemple).
-5. Écrire `.claude/workflow.yml`, puis suivre `docs/WORKFLOW.md` § 7 (statuts du tracker, tags de
-   build, memories citées).
+   du projet (`make setup`, par exemple), après l'étape 5 qui crée le lien `.claude/scripts`.
+5. Créer les liens relatifs, puis contrôler l'installation (§ « Liens », § « Contrôle ») :
+
+   ```sh
+   .claude/vendor/my-ticket-workflow/scripts/link.sh
+   ```
+
+6. Suivre `docs/WORKFLOW.md` § 7 (statuts du tracker, tags de build, memories citées), jusqu'à un
+   `.claude/scripts/check.sh` muet.
 
 ### Liens
 
 Chaque lien est relatif à son dossier, pour rester valide dans un autre clone ou un worktree.
+`scripts/link.sh` les crée d'après le contenu du paquet : un skill ou une doc ajoutés par une
+version reçoivent leur lien. Il signale un fichier réel à la place d'un lien sans y toucher, et
+liste les liens morts, à retirer à la main. `link.sh --check` liste les écarts sans rien créer.
 
 | Lien dans le projet           | Cible                                                |
 |-------------------------------|------------------------------------------------------|
@@ -157,7 +168,24 @@ modules:
 ```
 
 Chaque clé est décrite dans `.claude/workflow/FORMAT.md` § « Configuration » et dans les
-adaptateurs qu'elle désigne.
+adaptateurs qu'elle désigne. `workflow/config-schema.yml` liste les clés permises, obligatoires
+ou requises par un module, et les valeurs permises.
+
+### Contrôle
+
+`.claude/scripts/check.sh`, depuis un dossier du projet : code 0 sans rien afficher, ou code 1
+et une ligne par écart. Il contrôle :
+- la config contre le schéma (clé requise absente, clé inconnue, valeur hors liste) et
+  l'adaptateur de chaque service désigné
+- la status line et chaque hook du paquet déclarés dans `.claude/settings.json`
+- les liens (`link.sh --check`), les memories citées par le paquet, le hook `commit-msg` installé
+- la copie du paquet : ni `CLAUDE.md` ni `AGENTS.md`, aucune édition commitée dans le projet et
+  pas encore renvoyée, commit d'origine égal au tag de `VERSION` (dépôt du paquet lu par
+  `git ls-remote`, contrôle sauté hors réseau avec une ligne d'information)
+- les fichiers locaux du projet (`CLAUDE.md`, `docs/`, règles et skills locaux) : chemins
+  `.claude/…` et `docs/…` et skills `/<nom>` cités qui n'existent pas.
+
+`MY_TICKET_WORKFLOW_URL` remplace l'URL du dépôt du paquet, pour un essai sur un clone local.
 
 ## Montée de version
 
@@ -172,8 +200,10 @@ Dans une branche d'outillage du projet, working tree propre :
      git@github.com:cordechasse/my-ticket-workflow.git vX.Y.Z --squash
    ```
 
-3. Créer les liens d'un skill ou d'une doc ajoutés, retirer les liens morts.
-4. Suivre chaque « Migration » du CHANGELOG, dans l'ordre des versions.
+3. `.claude/scripts/link.sh` : liens des skills et des docs ajoutés, liens morts listés, à
+   retirer à la main.
+4. Suivre chaque « Migration » du CHANGELOG, dans l'ordre des versions, jusqu'à un
+   `.claude/scripts/check.sh` muet.
 
 ## Édition du paquet depuis un projet
 
@@ -195,7 +225,8 @@ projet ◀──subtree pull vX.Y.Z --squash────────────
 
 2. Dans le paquet : fusion dans `main`, entrée de `CHANGELOG.md`, `VERSION`, tag annoté `vX.Y.Z`
    poussé.
-3. Dans le projet : § « Montée de version » vers `vX.Y.Z`.
+3. Dans le projet : § « Montée de version » vers `vX.Y.Z`. Jusque-là, `check.sh` signale le
+   paquet modifié et pas encore renvoyé.
 
 Les autres projets tirent la version taguée à leur rythme.
 

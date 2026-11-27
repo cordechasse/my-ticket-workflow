@@ -20,13 +20,17 @@ Chaque version a un tag annoté `vX.Y.Z`. Montée de version : README § « Mont
 - `commit-msg-hook.sh` et `setup_claude_memory.sh` sont dans `scripts/`, donc sous
   `.claude/scripts/` du projet. `setup_claude_memory.sh` calcule la racine du projet par git.
 - FORMAT § « Configuration » : règle « Contenu du paquet », aucune valeur d'un projet.
+- `scripts/link.sh` crée les liens du projet d'après le contenu du paquet, et liste les écarts.
+- `scripts/check.sh` contrôle l'installation : config contre `workflow/config-schema.yml`,
+  adaptateurs, réglages, liens, memories, hook `commit-msg`, copie du paquet, fichiers locaux.
 
 ### Migration
 Depuis une copie installée par `sync.sh` :
 1. Supprimer les copies du paquet, `.claude/scripts/sync.sh` et `.claude/workflow.lock`.
 2. Sortir des dossiers liés chaque fichier local : un script local de `.claude/scripts/` va dans
    `scripts/` du projet, une règle locale reste dans `.claude/rules/`, hors de `paquet/`.
-3. Ajouter le paquet : README § « Installation », étapes 1 et 2.
+3. Ajouter le paquet : README § « Installation », étapes 1 et 5.
 4. Remplacer `scripts/commit-msg-hook.sh` par `.claude/scripts/commit-msg-hook.sh` dans
    l'installation du projet (copie dans `.git/hooks/commit-msg`).
 5. Comparer `.claude/settings.json` aux entrées du README.
+6. Lancer `.claude/scripts/check.sh` jusqu'à ce qu'il soit muet.

@@ -1,0 +1,59 @@
+# Created by Nicolas Bush on 27/11/2026.
+#
+# Schéma de `.claude/workflow.yml`, lu par `scripts/check.sh`.
+# Une entrée par clé de la config, à son chemin complet. Une clé de la config absente d'ici est
+# inconnue : renommée ou retirée par une version du paquet (CHANGELOG, « Migration »).
+# Règles d'une entrée, toutes facultatives :
+#   required: true           la clé doit être présente (une valeur vide ou `null` compte)
+#   required_if: <module>    présente quand `modules.<module>` est actif (ni `false`, ni `none`,
+#                            ni absent, FORMAT § « Configuration »)
+#   values: [<valeur>, …]    valeurs permises, comparées au texte que `yq` affiche
+# Une version qui ajoute une clé obligatoire ou en renomme une est une version majeure.
+
+tracker.provider: { required: true }
+tracker.site: {}
+tracker.project: { required: true }
+tracker.key_prefix: { required: true }
+tracker.reader: { required: true }
+tracker.reader_profile: { required: true }
+tracker.reporter: {}
+tracker.types.bug: { required: true }
+tracker.types.task: { required: true }
+tracker.states.en-cours.name: { required: true }
+tracker.states.en-cours.transition: {}
+tracker.states.a-livrer.name: { required: true }
+tracker.states.a-livrer.transition: {}
+tracker.states.dans-un-build.name: { required: true }
+tracker.states.dans-un-build.transition: {}
+tracker.states.fait.name: { required: true }
+tracker.states.fait.transition: {}
+
+forge.provider: { required: true }
+
+releases.published: { required: true }
+releases.integration_branch: { required: true }
+releases.closed_release_also_into: {}
+releases.version_file: { required: true }
+releases.version_line: { required: true }
+releases.build_tag: { required: true }
+
+app.bundle_id: { required: true }
+app.staging_bundle_id: { required_if: maestro }
+
+crashlytics.app_id: { required_if: crash_reporter }
+crashlytics.project: { required_if: crash_reporter }
+
+simulator.device_type: { required_if: simulator }
+simulator.root_cert: {}
+
+translations.localizables: { required_if: translations }
+translations.rules: { required_if: translations }
+
+package.url: {}
+package.push_url: {}
+
+modules.maestro: { values: [true, false, none] }
+modules.simulator: { values: [true, false, none] }
+modules.translations: { values: [poeditor, false, none] }
+modules.crash_reporter: { values: [crashlytics, false, none] }
+modules.poc: { values: [true, false, none] }

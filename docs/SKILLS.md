@@ -91,7 +91,7 @@ Pendant le code, Claude suit la conduite de session (FORMAT § « Conduite de se
 - il annonce chaque lot avec la chaîne des lots, ses fichiers et ses étapes, puis attend ton accord
 - il suit le plan au plus simple, et signale tout ajout avant de l'écrire
 - il montre un bloc `diff` après chaque modification
-- il propose les tests manuels un par un, au format de [`.claude/rules/manual-tests.md`](../.claude/rules/manual-tests.md)
+- il propose les tests manuels un par un, au format de [`.claude/rules/paquet/manual-tests.md`](../.claude/rules/paquet/manual-tests.md)
 - il finit chaque lot par un bloc qui dit si `/clear` et `/ticket-close` sont possibles.
 
 Ce dossier n'arrive jamais dans `develop` ni dans une release : la clôture le supprime avant la fusion, et la synthèse passe dans le message du commit de clôture.
@@ -480,7 +480,7 @@ commit « démarrage » (formulaire en fin de tour), lancement du lot 1
 | Onglet et simulateur | Onglet herdr renommé `CHORE_<description>` dès la description proposée, avant tout formulaire. Simulateur dédié seulement si un lot lance l'app, après accord |
 | Tracker | Aucun |
 
-Clôture : `/ticket-close` fusionne la chore en `--no-ff` dans `develop`, sans commentaire au lecteur ni statut. Les releases ouvertes recevront `develop` quand une session les touchera.
+Clôture : `/ticket-close` fusionne la chore en `--no-ff` dans `develop`, sans commentaire au lecteur ni statut. Les releases ouvertes recevront `develop` quand une session les touchera. Une chore qui modifie le paquet partagé (`.claude/vendor/my-ticket-workflow/`) le publie d'abord : renvoi par `git subtree push`, fusion et tag `vX.Y.Z` dans le dépôt du paquet, puis `git subtree pull` du tag dans la chore.
 
 ## 4. Skills de version
 
@@ -709,10 +709,12 @@ Le choix de l'outil vaut pour tous les worktrees du clone. Pour le changer : `gi
 | Fichier | Contenu | Lu par |
 |---|---|---|
 | [`.claude/workflow.yml`](../.claude/workflow.yml) | Valeurs du projet : tracker, forge, releases, identifiants de l'app, modules (FORMAT § « Configuration ») | Skills et scripts du paquet, par `yq` |
-| [`.claude/workflow.lock`](../.claude/workflow.lock) | Commit du paquet reçu ou publié, et sha256 de chacun de ses fichiers (WORKFLOW § 7) | `sync.sh` |
-| [`.claude/scripts/sync.sh`](../.claude/scripts/sync.sh) | Copie du paquet entre le dépôt `my-ticket-workflow` et le projet : `recevoir`, `publier`, plan sans `--apply` (WORKFLOW § 7) | L'utilisateur, dans une chore |
+| [`.claude/vendor/my-ticket-workflow/`](../.claude/vendor/my-ticket-workflow/) | Paquet partagé en `git subtree --squash` : `VERSION`, `CHANGELOG.md`, README (installation, montée de version, édition, contrôle) | L'utilisateur, `ticket-close` (§ « Paquet partagé ») |
+| [`.claude/workflow/config-schema.yml`](../.claude/workflow/config-schema.yml) | Clés permises de `.claude/workflow.yml` : obligatoires, requises par un module, valeurs permises | `check.sh` |
+| [`.claude/scripts/link.sh`](../.claude/scripts/link.sh) | Liens relatifs du projet vers le paquet, écarts listés par `--check` | L'utilisateur, à l'installation et à chaque montée de version |
+| [`.claude/scripts/check.sh`](../.claude/scripts/check.sh) | Contrôle de l'installation : config, adaptateurs, réglages, liens, memories, hook `commit-msg`, copie du paquet, fichiers locaux | L'utilisateur, `link.sh`, `ticket-close` (§ « Paquet partagé ») |
 | [`.claude/workflow/adapters/`](../.claude/workflow/adapters/) | Geste propre à un service : `tracker-<tracker.provider>`, `forge-<forge.provider>`, `published-<releases.published>` | Skills qui écrivent dans le tracker, la forge ou lisent les versions publiées |
-| [`.claude/rules/manual-tests.md`](../.claude/rules/manual-tests.md) | Protocole de chaque test manuel : annonce, un test à la fois, résultat écrit | Claude Code, chargé à chaque session (sans `paths:`) |
+| [`.claude/rules/paquet/manual-tests.md`](../.claude/rules/paquet/manual-tests.md) | Protocole de chaque test manuel : annonce, un test à la fois, résultat écrit | Claude Code, chargé à chaque session (sans `paths:`) |
 | [`.claude/workflow/FORMAT.md`](../.claude/workflow/FORMAT.md) | Format des fichiers de travail, conventions de ticket, de branche, de worktree, de commit et de fusion | Skills `ticket-*`, `chore`, `version-health` (§ « Ticket »), skills locaux qui créent un ticket |
 | [`.claude/workflow/RULES.md`](../.claude/workflow/RULES.md) | Lecture de l'état, définitions (version publiée, ouverte, à ouvrir), onglet herdr et phase des skills de version et des skills sans version, rôle de `develop`, releases en parallèle, création d'une release, fusion entre branches longues, base d'un ticket, cohérence à l'intégration, statuts logiques | `ticket-start`, `chore`, `ticket-close`, skills `version-*`, `show-diff` (§ « Base d'une branche a posteriori »), skills locaux de build et de support |
 | [`.claude/hooks/ticket-detect.sh`](../.claude/hooks/ticket-detect.sh) | Détection du ticket de la branche courante à l'ouverture de session | Claude Code (`.claude/settings.json`) |

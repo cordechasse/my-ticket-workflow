@@ -21,15 +21,16 @@ Le reste se retrouve dans l'historique git (FORMAT § « Retrouver un ticket clo
 
 Branche `chore/` (FORMAT § « Session de chore ») : cible `develop`, ni tracker ni commentaire au lecteur. Les releases ouvertes recevront `develop` quand une session les touchera (RULES § « Rôle de `develop` »).
 - Avec un dossier de session : toutes les étapes, avec ces écarts. Étape 1 : cible `develop`, sans lecture du tracker ni des versions publiées, et reproduction sautée. Étape 2 : conformité sans tracker (§ « Chore »). Étape 4 : sujet sans clé. Étape 5, formulaire 3 et points du commentaire au lecteur de l'audit : sautés. Étape 8 : la pull request ne publie aucun commentaire, et le push de `develop` du formulaire 6 n'écrit rien dans le tracker.
-- Sans dossier de session (chore démarrée à la main) : l'étape 0 est sautée, l'étape 1 se limite à la cible et au working tree, l'étape 2 aux axes qualité et performance (§ « Chore »), puis passe à l'étape 8.
+- Chore qui modifie le paquet partagé (FORMAT § « Session de chore », point « Paquet partagé ») : § « Paquet partagé », à la fin de l'étape 7.
+- Sans dossier de session (chore démarrée à la main, ou relance après un arrêt dans § « Paquet partagé ») : l'étape 0 est sautée, l'étape 1 se limite à la cible et au working tree, l'étape 2 aux axes qualité et performance (§ « Chore »), puis § « Paquet partagé » si la chore modifie le paquet, puis l'étape 8.
 
 Une branche de ticket sans dossier de session suit § « Clôture sans correctif » si l'analyse a conclu que l'app n'est pas en cause. Sinon elle s'arrête là : rien à clôturer, propose `/ticket-start`.
 
-Six formulaires (AskUserQuestion) jalonnent la clôture, plus celui de création du simulateur dédié quand le rejeu de l'étape 1 le demande, et ceux de la pause de l'étape 0. Chacun vaut accord pour ce qu'il affiche, et rien de plus.
+Six formulaires (AskUserQuestion) jalonnent la clôture, plus celui de création du simulateur dédié quand le rejeu de l'étape 1 le demande, celui du paquet partagé pour une chore qui le modifie, et ceux de la pause de l'étape 0. Chacun vaut accord pour ce qu'il affiche, et rien de plus.
 
 **Onglet** : dès la session trouvée (étape 0), avant tout formulaire, `.claude/scripts/herdr-tab.sh "<nom court>"`, nom court de sa branche (FORMAT § « Nom court, onglet herdr et simulateur »). La première phase de la clôture porte aussi ce nom court : `session-phase.sh "<phase>" "<nom court>"`.
 
-**Phase** (FORMAT § « Phase dans la status line ») : au début des étapes 0 à 7, écris la phase de l'étape : `clôture : pause` (seulement si la pause a lieu), `clôture : état des lieux`, `clôture : revue`, `clôture : commentaires de code`, `clôture : message de clôture`, `clôture : commentaire au lecteur`, `clôture : audit`, `clôture : commits`. Efface-la (`session-phase.sh --clear`) :
+**Phase** (FORMAT § « Phase dans la status line ») : au début des étapes 0 à 7, écris la phase de l'étape : `clôture : pause` (seulement si la pause a lieu), `clôture : état des lieux`, `clôture : revue`, `clôture : commentaires de code`, `clôture : message de clôture`, `clôture : commentaire au lecteur`, `clôture : audit`, `clôture : commits`, puis `clôture : paquet` (§ « Paquet partagé », s'il a lieu). Efface-la (`session-phase.sh --clear`) :
 - au début de l'étape 8, avant `ExitWorktree` : la fusion et le nettoyage suivent leurs formulaires, sans phase
 - à chaque arrêt avant l'étape 8, quelle qu'en soit la cause. Par exemple : commit de la pause refusé, écart de cohérence, formulaire refusé, « Corriger plus tard », « Annuler », arrêt demandé par l'utilisateur
 - quand « Corriger maintenant » rend la main pour corriger, avec ou sans lot « Revue de clôture » : la relance de la clôture réécrit la phase
@@ -320,7 +321,38 @@ echo "reader_comment=$reader_comment"
 
 Procédure de commit : FORMAT § « Commits ».
 
+### Paquet partagé
+
+Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEAD -- .claude/vendor/my-ticket-workflow` échoue. Sinon, section sautée. Le paquet est publié avant la fusion dans `develop` : un autre projet ne tire qu'une version taguée, et `develop` ne porte jamais une édition du paquet non renvoyée.
+
+`<préfixe>` : `.claude/vendor/my-ticket-workflow`. `<url>`, pour la lecture : `package.url` de la config, sinon la constante `DEFAULT_PACKAGE_URL` de `.claude/scripts/check.sh`. `<push_url>`, pour le push : `package.push_url`, sinon `package.url` si elle est définie (les deux désignent le même dépôt), sinon `DEFAULT_PACKAGE_PUSH_URL`. Une commande git par appel. Un chemin donné par une commande (`<pkg>`) est recopié en clair dans les suivantes : une variable du shell ne survit pas d'un appel à l'autre.
+
+1. **Dernière version publiée** : `git ls-remote --tags --refs <url> 'refs/tags/v*'`. Code non nul (réseau, URL fausse) : arrêt, rien n'est écrit. Sinon, le plus haut tag selon `sort -V`, comparé à `<préfixe>/VERSION` :
+   - aucun tag : première publication, `X.Y.Z` = `VERSION`
+   - tag égal à `VERSION`, et commit de version de cette chore présent (`git log --oneline --grep='^docs: version <VERSION>$' origin/develop..HEAD -- <préfixe>` non vide) : la chore a déjà publié `X.Y.Z` = `VERSION`, puis s'est arrêtée. Reprise au point 6
+   - tag égal à `VERSION`, sans ce commit : `X.Y.Z` est monté depuis ce tag, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste)
+   - `VERSION` plus haut que le tag : version écrite par une clôture interrompue, `X.Y.Z` = `VERSION`
+   - tag plus haut que `VERSION` : un autre projet a publié depuis le dernier `subtree pull`. Arrêt, sans commit ni push : la chore monte d'abord vers ce tag (README du paquet § « Montée de version », migration comprise), puis la clôture reprend. Le numéro tient alors compte des deux éditions, et aucune version n'est publiée deux fois.
+2. **Version** : entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Rien n'est commité à ce point.
+3. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis le commit de version et les gestes des points 4 à 6. Refus : `git restore <préfixe>/CHANGELOG.md <préfixe>/VERSION`, et la clôture s'arrête avant la fusion, rien n'est poussé. Accord : commit du paquet seul, `docs: version X.Y.Z` (FORMAT § « Commits »). Rien à commiter (relance après un arrêt) : pas de commit.
+4. **Renvoi** : `git subtree push -q --prefix <préfixe> <push_url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet. `-q` coupe la progression, une ligne par commit du projet parcouru (environ 30 s pour 4 000 commits).
+5. **Publication**, dans un clone temporaire du paquet, sur sa branche `main`. D'abord, le tag ne doit pas exister : `git ls-remote --tags <url> refs/tags/vX.Y.Z` a une sortie vide. Sortie non vide : un autre projet a publié ce numéro entre-temps. Arrêt avant le clone : la chore monte vers ce tag comme au point 1 (tag plus haut que `VERSION`), puis la clôture reprend au point 1, avec un nouveau commit de version au point 3. Ensuite :
+   ```bash
+   pkg=$(mktemp -d "${TMPDIR:-/tmp}/paquet.XXXXXX") && git clone -q -b main <url> "$pkg" && echo "pkg=$pkg"
+   git -C <pkg> merge --no-ff origin/<branche> -m "Merge branch '<branche>'"
+   git -C <pkg> tag -a vX.Y.Z -m "Version X.Y.Z"
+   git -C <pkg> push --atomic <push_url> main vX.Y.Z
+   git -C <pkg> push <push_url> --delete <branche>
+   ```
+   - Conflit (le paquet a reçu la version d'un autre projet) : `git -C <pkg> merge --abort`, arrêt, clone gardé et fichiers présentés.
+   - Push refusé : `--atomic` ne publie ni `main` ni le tag. Arrêt, clone gardé, erreur présentée.
+
+   Fin : `rm -rf <pkg>`.
+6. **Retour** : `git subtree pull -q --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`, qui finit par le contrôle. Il est muet, sauf un hook `commit-msg` installé avant le relais, que le `make setup` du projet (ou son équivalent) remplace après la fusion.
+
 ## 8. Intégration
+
+Chore qui modifie le paquet (§ « Paquet partagé »), dans le worktree de la chore, avant tout `ExitWorktree` : `.claude/scripts/check.sh` ne sort ni « Paquet modifié dans le projet et pas encore renvoyé », ni « Paquet tiré de … », ni « Tag … absent ». Une de ces lignes : arrêt avant le formulaire 5, `develop` ne reçoit pas un paquet non publié. Reprise par § « Paquet partagé », point 1.
 
 Session dans le worktree du ticket : `ExitWorktree` (`keep`) d'abord. La suite se lance depuis le dépôt principal, et le worktree du ticket pourra être retiré.
 

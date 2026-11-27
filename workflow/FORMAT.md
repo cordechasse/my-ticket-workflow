@@ -135,6 +135,7 @@ Format de `docs/COMMITS.md` (Conventional Commits, clé `#<clé>` en fin de suje
 - Commit refusé par le hook après le « oui » : Claude raccourcit le sujet, relance `git commit` sans redemander, puis montre le sujet final. Rien n'a été créé, donc pas d'amend.
 - Chemins explicites (`git add <chemins>`), puis `git diff --cached --stat` relu. Les fichiers que `TICKET.md` marque « ne jamais commiter » (override local…) restent hors du commit, et c'est signalé.
 - Un `git commit` par appel, code de sortie et `git log -1` vérifiés avant le suivant.
+- Un commit touche le paquet partagé ou le projet, jamais les deux (§ « Session de chore », point « Paquet partagé »).
 - Un hook pre-commit qui reformate annule le commit : relis le diff produit, re-stage, relance. Le hook reste actif (pas de `--no-verify`).
 
 ### Fusion
@@ -155,6 +156,8 @@ Une chore est de l'outillage interne sans ticket : skills Claude, scripts, outil
 - `TICKET.md` : `ticket: none`, `base: develop`, titre `# Chore — <sujet>`. « Reproduction » porte `N/A — chore`. Aucun test `(recette)` : le lecteur ne recette pas l'outillage.
 - Commits et fusions : chaque sujet et chaque message de fusion cité par un skill ou par RULES perd sa clé `#<clé>` (`docs(ticket): pause, <avancement>`, `Merge branch 'chore/<description>' into develop`).
 - Chore close : `git log --all --full-history --diff-filter=D --format='%h %s' -- docs/tickets/chore-<description>/` donne le commit de clôture. La suite est celle d'un ticket clos (§ « Retrouver un ticket clos »).
+
+**Paquet partagé** : les skills, les règles et les scripts du workflow forment un paquet commun à plusieurs projets, intégré par `git subtree --squash` sous `.claude/vendor/my-ticket-workflow/` et atteint par des liens (`docs/WORKFLOW.md` § 7). Une chore qui le modifie l'édite en place, sous ce dossier ou par ses liens. Un commit touche le paquet ou le projet, jamais les deux : `git subtree push` extrait alors les commits du paquet sans ceux du projet. À la clôture, `ticket-close` renvoie l'édition au dépôt du paquet, publie une version taguée, puis la tire dans la chore (`ticket-close` § « Paquet partagé »). `.claude/scripts/check.sh` contrôle l'installation : muet quand tout est en place.
 
 Outillage touché pendant une session de ticket : demande hors route (§ « Conduite de session », règle 7). Il se fait dans une chore depuis `develop`, jamais sur la branche du ticket ni sur un `poc/<nom>`. La branche du ticket le reçoit ensuite par sa base, si elle en a besoin (RULES § « Mise à jour d'une base »).
 

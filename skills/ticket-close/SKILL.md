@@ -21,15 +21,16 @@ Le reste se retrouve dans l'historique git (FORMAT § « Retrouver un ticket clo
 
 Branche `chore/` (FORMAT § « Session de chore ») : cible `develop`, ni tracker ni commentaire au lecteur. Les releases ouvertes recevront `develop` quand une session les touchera (RULES § « Rôle de `develop` »).
 - Avec un dossier de session : toutes les étapes, avec ces écarts. Étape 1 : cible `develop`, sans lecture du tracker ni des versions publiées, et reproduction sautée. Étape 2 : conformité sans tracker (§ « Chore »). Étape 4 : sujet sans clé. Étape 5, formulaire 3 et points du commentaire au lecteur de l'audit : sautés. Étape 8 : la pull request ne publie aucun commentaire, et le push de `develop` du formulaire 6 n'écrit rien dans le tracker.
+- Chore qui modifie le paquet partagé (FORMAT § « Session de chore », point « Paquet partagé ») : § « Paquet partagé », à la fin de l'étape 7.
 - Sans dossier de session (chore démarrée à la main) : l'étape 0 est sautée, l'étape 1 se limite à la cible et au working tree, l'étape 2 aux axes qualité et performance (§ « Chore »), puis passe à l'étape 8.
 
 Une branche de ticket sans dossier de session suit § « Clôture sans correctif » si l'analyse a conclu que l'app n'est pas en cause. Sinon elle s'arrête là : rien à clôturer, propose `/ticket-start`.
 
-Six formulaires (AskUserQuestion) jalonnent la clôture, plus celui de création du simulateur dédié quand le rejeu de l'étape 1 le demande, et ceux de la pause de l'étape 0. Chacun vaut accord pour ce qu'il affiche, et rien de plus.
+Six formulaires (AskUserQuestion) jalonnent la clôture, plus celui de création du simulateur dédié quand le rejeu de l'étape 1 le demande, celui du paquet partagé pour une chore qui le modifie, et ceux de la pause de l'étape 0. Chacun vaut accord pour ce qu'il affiche, et rien de plus.
 
 **Onglet** : dès la session trouvée (étape 0), avant tout formulaire, `.claude/scripts/herdr-tab.sh "<nom court>"`, nom court de sa branche (FORMAT § « Nom court, onglet herdr et simulateur »). La première phase de la clôture porte aussi ce nom court : `session-phase.sh "<phase>" "<nom court>"`.
 
-**Phase** (FORMAT § « Phase dans la status line ») : au début des étapes 0 à 7, écris la phase de l'étape : `clôture : pause` (seulement si la pause a lieu), `clôture : état des lieux`, `clôture : revue`, `clôture : commentaires de code`, `clôture : message de clôture`, `clôture : commentaire au lecteur`, `clôture : audit`, `clôture : commits`. Efface-la (`session-phase.sh --clear`) :
+**Phase** (FORMAT § « Phase dans la status line ») : au début des étapes 0 à 7, écris la phase de l'étape : `clôture : pause` (seulement si la pause a lieu), `clôture : état des lieux`, `clôture : revue`, `clôture : commentaires de code`, `clôture : message de clôture`, `clôture : commentaire au lecteur`, `clôture : audit`, `clôture : commits`, puis `clôture : paquet` (§ « Paquet partagé », s'il a lieu). Efface-la (`session-phase.sh --clear`) :
 - au début de l'étape 8, avant `ExitWorktree` : la fusion et le nettoyage suivent leurs formulaires, sans phase
 - à chaque arrêt avant l'étape 8, quelle qu'en soit la cause. Par exemple : commit de la pause refusé, écart de cohérence, formulaire refusé, « Corriger plus tard », « Annuler », arrêt demandé par l'utilisateur
 - quand « Corriger maintenant » rend la main pour corriger, avec ou sans lot « Revue de clôture » : la relance de la clôture réécrit la phase
@@ -319,6 +320,26 @@ echo "reader_comment=$reader_comment"
 2. la suppression de `docs/tickets/<slug>/` (`git rm -r`, hors fichiers « ne jamais commiter » de `TICKET.md`), avec le message de clôture.
 
 Procédure de commit : FORMAT § « Commits ».
+
+### Paquet partagé
+
+Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEAD -- .claude/vendor/my-ticket-workflow` échoue. Sinon, section sautée. Le paquet est publié avant la fusion dans `develop` : un autre projet ne tire qu'une version taguée, et `develop` ne porte jamais une édition du paquet non renvoyée.
+
+`<préfixe>` : `.claude/vendor/my-ticket-workflow`. `<url>` : constante `PACKAGE_URL` de `.claude/scripts/check.sh`. Une commande git par appel.
+
+1. **Version** : `X.Y.Z` depuis `<préfixe>/VERSION`, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste). Entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Commit du paquet seul : `docs: version X.Y.Z`.
+2. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis les gestes des points 3 à 5. Refus : la clôture s'arrête avant la fusion, rien n'est poussé.
+3. **Renvoi** : `git subtree push --prefix <préfixe> <url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet.
+4. **Publication**, dans un clone temporaire du paquet :
+   ```bash
+   pkg=$(mktemp -d -t paquet) && git clone -q <url> "$pkg" && echo "pkg=$pkg"
+   git -C "$pkg" merge --no-ff origin/<branche> -m "Merge branch '<branche>'"
+   git -C "$pkg" tag -a vX.Y.Z -m "Version X.Y.Z"
+   git -C "$pkg" push origin main vX.Y.Z
+   git -C "$pkg" push origin --delete <branche>
+   ```
+   Conflit (le paquet a reçu la version d'un autre projet) : `git -C "$pkg" merge --abort`, arrêt, clone gardé et fichiers présentés. Fin : `rm -rf "$pkg"`.
+5. **Retour** : `git subtree pull --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`. Le contrôle est muet, sauf le hook `commit-msg` du checkout, que le `make setup` (ou l'équivalent du projet) recopie après la fusion.
 
 ## 8. Intégration
 

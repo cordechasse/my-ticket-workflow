@@ -21,6 +21,8 @@ Chaque version a un tag annoté `vX.Y.Z`. Montée de version : README § « Mont
   `.claude/scripts/` du projet. `setup_claude_memory.sh` calcule la racine du projet par git.
 - FORMAT § « Configuration » : règle « Contenu du paquet », aucune valeur d'un projet.
 - `scripts/link.sh` crée les liens du projet d'après le contenu du paquet, et liste les écarts.
+- `ticket-close` publie le paquet modifié par une chore avant sa fusion : `subtree push`, fusion
+  et tag dans le dépôt du paquet, `subtree pull` du tag (FORMAT § « Session de chore »).
 - `scripts/check.sh` contrôle l'installation : config contre `workflow/config-schema.yml`,
   adaptateurs, réglages, liens, memories, hook `commit-msg`, copie du paquet, fichiers locaux.
 

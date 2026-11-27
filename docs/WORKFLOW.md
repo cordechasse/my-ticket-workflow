@@ -270,18 +270,17 @@ Rôle, usage, déroulé, impacts et gardes de chaque skill : [`SKILLS.md`](SKILL
 
 ## 7. Mise en place d'un projet
 
-Les skills, les règles et leurs scripts forment un paquet commun à plusieurs projets, tenu dans le dépôt `my-ticket-workflow`. Chaque projet en garde une copie versionnée : les skills lisent toujours les fichiers du projet, jamais le dépôt du paquet. `.claude/scripts/sync.sh` copie le paquet dans un sens ou dans l'autre :
+Les skills, les règles et leurs scripts forment un paquet commun à plusieurs projets, tenu dans le dépôt `my-ticket-workflow`. Chaque projet l'intègre par `git subtree --squash` à une version taguée, sous `.claude/vendor/my-ticket-workflow/`, et le rend visible à Claude Code par des liens relatifs. Les skills citent les chemins du projet (`.claude/workflow/FORMAT.md`), atteints par les liens.
 
 ```text
-my-ticket-workflow ──recevoir──▶ projet (.claude/, docs/, scripts/) + .claude/workflow.lock
-                   ◀──publier───
+my-ticket-workflow ──subtree pull vX.Y.Z --squash──▶ projet : .claude/vendor/my-ticket-workflow/
+                   ◀──subtree push <branche>────────          ▲ liens de .claude/ et docs/ (link.sh)
 ```
 
-- **Installation** : cloner `my-ticket-workflow` à côté du projet (`../my-ticket-workflow`), ou poser `MY_TICKET_WORKFLOW_DIR`. Puis, dans une chore : `.claude/scripts/sync.sh recevoir` montre le plan, et le diff des fichiers locaux qu'il écrase, puis `recevoir --apply` copie. Le 1er `recevoir` se lance depuis le script du clone : `../my-ticket-workflow/.claude/scripts/sync.sh recevoir`.
-- **Lock** : `.claude/workflow.lock`, commité avec le projet. 1re ligne `commit <sha du paquet>`, puis le sha256 de chaque fichier du paquet à ce commit. Un fichier dont le hash diffère est une retouche locale.
-- **Évolution** : un fichier du paquet se modifie dans le projet, dans une chore. Après sa fusion dans `develop`, `sync.sh publier` montre les fichiers modifiés depuis le lock, puis `publier --apply` les copie et les commite dans le paquet. Un fichier ajouté au paquet : `publier --apply <chemin>`. Un fichier supprimé du projet est retiré du paquet. Le push du paquet se fait à la main.
-- **Gardes** : `publier` refuse un paquet qui a avancé depuis le lock (`recevoir` d'abord). `recevoir` garde une retouche locale sur un fichier que le paquet n'a pas changé, et refuse un fichier changé des deux côtés. Les deux refusent un clone sale ou en retard sur origin.
-- **Hors du paquet** : `.claude/workflow.yml`, les skills locaux, `SKILLS-LOCAL.md`, `CLAUDE.md`, les memories et `.claude/settings.local.json`. `recevoir` signale une memory citée par le paquet et absente de `.claude/context/`.
+- **Installation** et **montée de version** : README du paquet, § « Installation » et § « Montée de version ». `link.sh` crée les liens, `check.sh` contrôle l'installation (README § « Contrôle »).
+- **Évolution** : un fichier du paquet se modifie dans le projet, dans une chore, sous `.claude/vendor/my-ticket-workflow/` ou par ses liens. Un commit touche le paquet ou le projet, jamais les deux. `/ticket-close` renvoie l'édition au dépôt du paquet, publie une version taguée, puis la tire dans la chore avant la fusion dans `develop` (FORMAT § « Session de chore », point « Paquet partagé »).
+- **Versions** : numéro fixé par la migration que la montée demande au projet, détaillée par version dans `CHANGELOG.md`. Chaque projet monte à son rythme.
+- **Hors du paquet** : `.claude/workflow.yml`, `.claude/settings.json`, les skills et les règles locaux, `SKILLS-LOCAL.md`, `CLAUDE.md`, les memories et `.claude/settings.local.json`. `check.sh` signale une memory citée par le paquet et absente.
 
 Le paquet ne contient ni la configuration du projet, ni l'état de ses services. Avant le premier skill :
 1. **Configuration** : `.claude/workflow.yml`, avec les modules du projet (`modules`). Un service sans adaptateur dans `.claude/workflow/adapters/` demande d'abord son adaptateur.

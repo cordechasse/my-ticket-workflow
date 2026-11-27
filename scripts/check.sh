@@ -67,15 +67,18 @@ else
 	# Feuilles de la config, une par ligne : `<chemin>\t<valeur>`.
 	leaves=$(yq -r '.. | select(tag != "!!map") | [(path | join(".")), .] | @tsv' "$CONFIG")
 	schema="$PREFIX/workflow/config-schema.yml"
+	# Règles du schéma, une par ligne : `<chemin>|<required>|<required_if>|<values>`. Séparateur
+	# `|` et non tabulation : `read` fusionne les tabulations, et un champ vide décalerait les autres.
 	rules=$(yq -r 'to_entries | .[] | [.key, (.value.required // false),
-		(.value.required_if // ""), ((.value.values // []) | join(" "))] | @tsv' "$schema")
+		(.value.required_if // ""), ((.value.values // []) | join(" "))] | join("|")' "$schema")
 
 	while IFS=$'\t' read -r key _; do
-		grep -q "^$key	" <<<"$rules" || report "Clé inconnue : $key (renommée ou retirée, CHANGELOG)."
+		cut -d'|' -f1 <<<"$rules" | grep -qxF "$key" ||
+			report "Clé inconnue : $key (renommée ou retirée, CHANGELOG)."
 	done <<<"$leaves"
 
-	while IFS=$'\t' read -r key required required_if values; do
-		line=$(grep "^$key	" <<<"$leaves")
+	while IFS='|' read -r key required required_if values; do
+		line=$(awk -F'\t' -v key="$key" '$1 == key' <<<"$leaves")
 		if [ -z "$line" ]; then
 			if [ "$required" = "true" ]; then
 				report "Clé requise absente : $key."

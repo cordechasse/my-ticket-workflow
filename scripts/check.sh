@@ -90,6 +90,8 @@ else
 		(.value.required_if // ""), ((.value.values // []) | join(" "))] | join("|")' "$schema")
 
 	while IFS=$'\t' read -r key _; do
+		# Config sans feuille (`{}`) : `<<<` donne une ligne vide.
+		[ -n "$key" ] || continue
 		cut -d'|' -f1 <<<"$rules" | grep -qxF "$key" ||
 			report "Clé inconnue : $key (renommée ou retirée, CHANGELOG)."
 	done <<<"$leaves"
@@ -197,9 +199,14 @@ else
 	version=$(tr -d '[:space:]' <"$PREFIX/VERSION")
 	package_url=$(yq -r '.package.url // ""' "$CONFIG" 2>/dev/null)
 	: "${package_url:=$DEFAULT_PACKAGE_URL}"
-	# Aucune question à l'utilisateur : ni mot de passe en HTTPS, ni passphrase en SSH.
+	# Aucune question à l'utilisateur : ni mot de passe en HTTPS, ni passphrase en SSH. Lecture
+	# bornée à 5 s par `alarm` de perl : macOS n'a pas `timeout`, et `ConnectTimeout` ne vaut que
+	# pour SSH. Sans perl, la lecture n'a pas de borne.
+	limit=()
+	command -v perl >/dev/null && limit=(perl -e 'alarm shift; exec @ARGV' 5)
 	if tags=$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o ConnectTimeout=5 -o BatchMode=yes" \
-		git ls-remote --tags "$package_url" "refs/tags/v$version" "refs/tags/v$version^{}" 2>/dev/null); then
+		${limit[@]+"${limit[@]}"} git ls-remote --tags "$package_url" "refs/tags/v$version" \
+		"refs/tags/v$version^{}" 2>/dev/null); then
 		# Tag annoté : la ligne `^{}` donne le commit. Tag léger : la seule ligne.
 		tagged=$(grep '\^{}$' <<<"$tags" | cut -f1)
 		[ -z "$tagged" ] && tagged=$(head -1 <<<"$tags" | cut -f1)

@@ -202,7 +202,13 @@ local_files() {
 while IFS= read -r file; do
 	# Les citations `§ « … »` nomment une section, pas un fichier : retirées avant la recherche.
 	text=$(sed 's/§ « [^»]*»//g' "$file")
-	for path in $(grep -oE '`(\.claude|docs)/[^`<>*{}$… ]+`' <<<"$text" | tr -d '`' | sort -u); do
+	# Chemins dans un code en ligne (`ruby .claude/…` compris) ou dans la cible d'un lien Markdown,
+	# `../` retirés : un lien de `docs/` vers `../.claude/…` part de la racine. Un modèle
+	# (`<slug>`, `*`, `{version}`, `…`, `$VAR`) n'est pas un chemin.
+	paths=$({ grep -oE '`[^`]+`' <<<"$text"; grep -oE '\]\([^)]+\)' <<<"$text"; } |
+		grep -oE "(^|[\`( \"'])(\.\./)*(\.claude|docs)/[^\`() \"']*" |
+		sed -E "s/^[\`( \"']//; s/^(\.\.\/)+//; s/[.,;:]+$//" | grep -v '[<>*{}$…]' | sort -u)
+	for path in $paths; do
 		[ -e "${path%/}" ] || report "Chemin absent : $path (cité dans $file)."
 	done
 	for name in $(grep -oE '`/[a-z][a-z0-9-]*[ `]' <<<"$text" | sed 's/^`\///; s/[ `]$//' | sort -u); do

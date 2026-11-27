@@ -8,7 +8,7 @@ Numéros au format `X.Y.Z`, fixés par la migration qu'une montée demande au pr
 
 Chaque version a un tag annoté `vX.Y.Z`. Montée de version : README § « Montée de version ».
 
-## 1.0.0 (non publiée)
+## 1.0.0 (2026-11-27)
 
 ### Changements
 - Disposition à la racine : `skills/`, `workflow/`, `scripts/`, `hooks/`, `rules/`, `docs/`. Le

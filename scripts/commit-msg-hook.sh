@@ -6,7 +6,12 @@
 # Usage : commit-msg-hook.sh <fichier du message>
 
 # Longueur en caractères (et non en octets) des sujets accentués, même lancé depuis un client git sans locale.
-export LC_ALL=en_US.UTF-8
+# Un poste Linux sans `en_US.UTF-8` a toujours `C.UTF-8`.
+if locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$'; then
+	export LC_ALL=en_US.UTF-8
+else
+	export LC_ALL=C.UTF-8
+fi
 
 readonly TYPES="feat|fix|perf|refactor|style|test|docs|build|ci|chore|revert"
 readonly MAX_SUBJECT_LENGTH=72
@@ -51,13 +56,14 @@ if [ "${#lines[@]}" -gt 1 ] && [ -n "${lines[1]}" ]; then
 fi
 
 # Clé de la branche, au format `<type>/<clé>_<description>`, ou à l'ancien format
-# `<type>/<description>-<clé>` quand le préfixe n'est pas vide.
+# `<type>/<description>-<clé>` quand le préfixe n'est pas vide. Le préfixe entre guillemets est
+# comparé tel quel, sans valeur de regex pour ses caractères (`.`, `+`).
 branch=$(git branch --show-current 2>/dev/null)
 branch_ticket=""
-if [[ $branch =~ ^[a-z]+/(${prefix}[0-9]+)_ ]] || { [ -n "$prefix" ] && [[ $branch =~ -(${prefix}[0-9]+)$ ]]; }; then
+if [[ $branch =~ ^[a-z]+/("$prefix"[0-9]+)_ ]] || { [ -n "$prefix" ] && [[ $branch =~ -("$prefix"[0-9]+)$ ]]; }; then
 	branch_ticket=${BASH_REMATCH[1]}
 fi
-if [ -n "$branch_ticket" ] && ! [[ "$subject" =~ \ \#${branch_ticket}$ ]]; then
+if [ -n "$branch_ticket" ] && ! [[ "$subject" =~ \ \#"$branch_ticket"$ ]]; then
 	warnings+=("Clé #${branch_ticket} de la branche absente de la fin du sujet.")
 fi
 

@@ -16,8 +16,13 @@
 
 set -uo pipefail
 
-# Recherches sur du texte accentué (`…`, `«`), même lancé depuis un client sans locale.
-export LC_ALL=en_US.UTF-8
+# Recherches sur du texte accentué (`…`, `«`), même lancé depuis un client sans locale. Un poste
+# Linux sans `en_US.UTF-8` a toujours `C.UTF-8`.
+if locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$'; then
+	export LC_ALL=en_US.UTF-8
+else
+	export LC_ALL=C.UTF-8
+fi
 
 # Dossier du paquet dans le projet, préfixe du `git subtree`.
 readonly PREFIX=".claude/vendor/my-ticket-workflow"
@@ -47,6 +52,11 @@ if ! yq --version 2>/dev/null | grep -q 'mikefarah.* v4\.'; then
 	echo "yq de mikefarah en v4 requis (brew install yq) : $(yq --version 2>&1 | head -1)."
 	exit 1
 fi
+# `jq` lit les réglages : sans lui, chaque déclaration serait signalée absente.
+if ! command -v jq >/dev/null; then
+	echo "jq requis (brew install jq)."
+	exit 1
+fi
 if [ ! -d "$PREFIX" ]; then
 	echo "Paquet absent : $PREFIX (README § « Installation »)."
 	exit 1
@@ -57,15 +67,20 @@ fi
 # Vrai si le module est actif : ni `false`, ni `none`, ni absent (FORMAT § « Configuration »).
 module_on() {
 	local value
-	value=$(yq -r ".modules.$1 // \"none\"" "$CONFIG")
+	value=$(yq -r ".modules.$1 // \"none\"" "$CONFIG" 2>/dev/null)
 	[ "$value" != "false" ] && [ "$value" != "none" ]
 }
 
 if [ ! -f "$CONFIG" ]; then
 	report "Config absente : $CONFIG (README § « Configuration »)."
+elif ! yq -e 'tag == "!!map"' "$CONFIG" >/dev/null 2>&1; then
+	# YAML invalide ou racine qui n'est pas une table : chaque clé requise sortirait absente.
+	report "Config illisible : $CONFIG (YAML invalide, ou racine qui n'est pas une table)."
 else
-	# Feuilles de la config, une par ligne : `<chemin>\t<valeur>`.
-	leaves=$(yq -r '.. | select(tag != "!!map") | [(path | join(".")), .] | @tsv' "$CONFIG")
+	# Feuilles de la config, une par ligne : `<chemin>\t<valeur>`. Une séquence est une feuille, en
+	# JSON sur une ligne : ses éléments n'ont pas d'entrée dans le schéma.
+	leaves=$(yq -r '.. | select(tag != "!!map") | select(path | map(tag == "!!int") | any | not)
+		| [(path | join(".")), ((select(tag == "!!seq") | @json) // .)] | @tsv' "$CONFIG")
 	schema="$PREFIX/workflow/config-schema.yml"
 	# Règles du schéma, une par ligne : `<chemin>|<required>|<required_if>|<values>`. Séparateur
 	# `|` et non tabulation : `read` fusionne les tabulations, et un champ vide décalerait les autres.
@@ -113,6 +128,7 @@ else
 	grep -q '\.claude/scripts/statusline\.sh' <<<"$commands" ||
 		report "Status line non déclarée dans $SETTINGS (README § « Réglages »)."
 	for hook in "$PREFIX"/hooks/*.sh; do
+		[ -e "$hook" ] || continue
 		name=$(basename "$hook")
 		grep -qF ".claude/hooks/$name" <<<"$commands" ||
 			report "Hook non déclaré dans $SETTINGS : .claude/hooks/$name (README § « Réglages »)."
@@ -140,11 +156,11 @@ memory_module() {
 # au nom fait du chemin dont chaque caractère hors lettres et chiffres devient `-`.
 main_checkout=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 memory_dir="$HOME/.claude/projects/$(sed 's/[^A-Za-z0-9]/-/g' <<<"$main_checkout")/memory"
-for memory in $(grep -rhoE '`(reference|feedback|project|user)_[a-z0-9_]+`' "$PREFIX" | tr -d '`' | sort -u); do
+while IFS= read -r memory; do
 	module=$(memory_module "$memory")
 	[ -n "$module" ] && [ -f "$CONFIG" ] && ! module_on "$module" && continue
 	[ -f "$memory_dir/$memory.md" ] || report "Memory citée par le paquet absente : $memory ($memory_dir)."
-done
+done < <(grep -rhoE '`(reference|feedback|project|user)_[a-z0-9_]+`' "$PREFIX" | tr -d '`' | sort -u)
 
 # --- Hook commit-msg ---
 
@@ -161,9 +177,9 @@ if git check-ignore -q --no-index "$PREFIX/VERSION"; then
 	report "Paquet ignoré par un .gitignore : ajouter !.claude/vendor/ (README § « Installation »)."
 fi
 
-for file in $(find "$PREFIX" -name CLAUDE.md -o -name AGENTS.md); do
+while IFS= read -r file; do
 	report "Fichier chargé par Claude Code dans le paquet : $file (README § « Contenu »)."
-done
+done < <(find "$PREFIX" -name CLAUDE.md -o -name AGENTS.md)
 
 # Dernier commit `--squash` du subtree : son arbre est le paquet tel que tiré, et
 # `git-subtree-split` donne le commit d'origine dans le dépôt du paquet.
@@ -211,17 +227,16 @@ while IFS= read -r file; do
 	# Chemins dans un code en ligne (`ruby .claude/…` compris) ou dans la cible d'un lien Markdown,
 	# `../` retirés : un lien de `docs/` vers `../.claude/…` part de la racine. Un modèle
 	# (`<slug>`, `*`, `{version}`, `…`, `$VAR`) n'est pas un chemin.
-	paths=$({ grep -oE '`[^`]+`' <<<"$text"; grep -oE '\]\([^)]+\)' <<<"$text"; } |
+	while IFS= read -r path; do
+		[ -e "${path%/}" ] || report "Chemin absent : $path (cité dans $file)."
+	done < <({ grep -oE '`[^`]+`' <<<"$text"; grep -oE '\]\([^)]+\)' <<<"$text"; } |
 		grep -oE "(^|[\`( \"'])(\.\./)*(\.claude|docs)/[^\`() \"']*" |
 		sed -E "s/^[\`( \"']//; s/^(\.\.\/)+//; s/[.,;:]+$//" | grep -v '[<>*{}$…]' | sort -u)
-	for path in $paths; do
-		[ -e "${path%/}" ] || report "Chemin absent : $path (cité dans $file)."
-	done
-	for name in $(grep -oE '`/[a-z][a-z0-9-]*[ `]' <<<"$text" | sed 's/^`\///; s/[ `]$//' | sort -u); do
+	while IFS= read -r name; do
 		[[ $BUILTIN_COMMANDS == *" $name "* ]] && continue
 		[ -e ".claude/skills/$name" ] || [ -e "$HOME/.claude/skills/$name" ] ||
 			report "Skill absent : /$name (cité dans $file)."
-	done
+	done < <(grep -oE '`/[a-z][a-z0-9-]*[ `]' <<<"$text" | sed 's/^`\///; s/[ `]$//' | sort -u)
 done < <(local_files)
 
 exit $issues

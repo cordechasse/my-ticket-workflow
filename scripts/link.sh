@@ -62,7 +62,9 @@ ensure_link() {
 	ln -s "$target" "$link" && echo "Lien créé : $link → $target"
 }
 
+# Un glob sans correspondance reste tel quel : la garde `-e` l'écarte.
 for skill in "$PREFIX"/skills/*/; do
+	[ -e "$skill" ] || continue
 	name=$(basename "$skill")
 	ensure_link ".claude/skills/$name" "../vendor/my-ticket-workflow/skills/$name"
 done
@@ -71,6 +73,7 @@ for folder in workflow scripts hooks; do
 done
 ensure_link ".claude/rules/paquet" "../vendor/my-ticket-workflow/rules"
 for doc in "$PREFIX"/docs/*.md; do
+	[ -e "$doc" ] || continue
 	name=$(basename "$doc")
 	ensure_link "docs/$name" "../.claude/vendor/my-ticket-workflow/docs/$name"
 done

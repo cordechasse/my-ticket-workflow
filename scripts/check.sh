@@ -12,7 +12,6 @@
 # Usage, depuis un dossier du projet : .claude/scripts/check.sh
 # Sortie : code 0 sans rien afficher, ou code 1 et une ligne par écart. Une ligne d'information
 # sur stderr signale un contrôle sauté (dépôt du paquet injoignable), sans changer le code.
-# Variable d'environnement : `MY_TICKET_WORKFLOW_URL` remplace l'URL du dépôt du paquet (essais).
 
 set -uo pipefail
 
@@ -26,7 +25,10 @@ fi
 
 # Dossier du paquet dans le projet, préfixe du `git subtree`.
 readonly PREFIX=".claude/vendor/my-ticket-workflow"
-readonly PACKAGE_URL="${MY_TICKET_WORKFLOW_URL:-git@github.com:cordechasse/my-ticket-workflow.git}"
+# URL du dépôt du paquet, quand la config n'a pas `package.url` et `package.push_url` (fork, essai
+# sur un dépôt jetable). Lecture en HTTPS, sans clé SSH. `ticket-close` lit aussi ces constantes.
+readonly DEFAULT_PACKAGE_URL="https://github.com/cordechasse/my-ticket-workflow.git"
+readonly DEFAULT_PACKAGE_PUSH_URL="git@github.com:cordechasse/my-ticket-workflow.git"
 readonly CONFIG=".claude/workflow.yml"
 readonly SETTINGS=".claude/settings.json"
 
@@ -193,13 +195,16 @@ else
 	fi
 	split=$(git log -1 --format=%B "$squash" | sed -n 's/^git-subtree-split: //p')
 	version=$(tr -d '[:space:]' <"$PREFIX/VERSION")
-	if tags=$(GIT_SSH_COMMAND="ssh -o ConnectTimeout=5 -o BatchMode=yes" \
-		git ls-remote --tags "$PACKAGE_URL" "refs/tags/v$version" "refs/tags/v$version^{}" 2>/dev/null); then
+	package_url=$(yq -r '.package.url // ""' "$CONFIG" 2>/dev/null)
+	: "${package_url:=$DEFAULT_PACKAGE_URL}"
+	# Aucune question à l'utilisateur : ni mot de passe en HTTPS, ni passphrase en SSH.
+	if tags=$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o ConnectTimeout=5 -o BatchMode=yes" \
+		git ls-remote --tags "$package_url" "refs/tags/v$version" "refs/tags/v$version^{}" 2>/dev/null); then
 		# Tag annoté : la ligne `^{}` donne le commit. Tag léger : la seule ligne.
 		tagged=$(grep '\^{}$' <<<"$tags" | cut -f1)
 		[ -z "$tagged" ] && tagged=$(head -1 <<<"$tags" | cut -f1)
 		if [ -z "$tagged" ]; then
-			report "Tag v$version absent du dépôt du paquet ($PACKAGE_URL)."
+			report "Tag v$version absent du dépôt du paquet ($package_url)."
 		elif [ "$tagged" != "$split" ]; then
 			report "Paquet tiré de ${split:0:7}, pas du tag v$version (${tagged:0:7}) : git subtree pull d'un tag."
 		fi

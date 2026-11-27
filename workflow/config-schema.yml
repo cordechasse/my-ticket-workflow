@@ -49,6 +49,9 @@ simulator.root_cert: {}
 translations.localizables: { required_if: translations }
 translations.rules: { required_if: translations }
 
+package.url: {}
+package.push_url: {}
+
 modules.maestro: { values: [true, false, none] }
 modules.simulator: { values: [true, false, none] }
 modules.translations: { values: [poeditor, false, none] }

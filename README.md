@@ -47,7 +47,7 @@ qui ignore `vendor/` (gems) ignore aussi le paquet : ajouter `!.claude/vendor/` 
 
    ```sh
    git subtree add --prefix .claude/vendor/my-ticket-workflow \
-     git@github.com:cordechasse/my-ticket-workflow.git v1.0.0 --squash
+     https://github.com/cordechasse/my-ticket-workflow.git v1.0.0 --squash
    ```
 
 2. Déclarer les entrées de `.claude/settings.json` (§ « Réglages »).
@@ -169,7 +169,10 @@ modules:
 ```
 
 Chaque clé est décrite dans `.claude/workflow/FORMAT.md` § « Configuration » et dans les
-adaptateurs qu'elle désigne. `workflow/config-schema.yml` liste les clés permises, obligatoires
+adaptateurs qu'elle désigne. Deux clés facultatives remplacent le dépôt du paquet, pour un fork
+ou un essai sur un dépôt jetable : `package.url` pour la lecture, en HTTPS, et `package.push_url`
+pour le push. Sans elles, les constantes de `.claude/scripts/check.sh` s'appliquent.
+`workflow/config-schema.yml` liste les clés permises, obligatoires
 ou requises par un module, et les valeurs permises.
 
 ### Contrôle
@@ -186,8 +189,6 @@ et une ligne par écart. Il contrôle :
 - les fichiers locaux du projet (`CLAUDE.md`, `docs/`, règles et skills locaux) : chemins
   `.claude/…` et `docs/…` et skills `/<nom>` cités qui n'existent pas.
 
-`MY_TICKET_WORKFLOW_URL` remplace l'URL du dépôt du paquet, pour un essai sur un clone local.
-
 ## Montée de version
 
 Dans une branche d'outillage du projet, working tree propre :
@@ -198,7 +199,7 @@ Dans une branche d'outillage du projet, working tree propre :
 
    ```sh
    git subtree pull --prefix .claude/vendor/my-ticket-workflow \
-     git@github.com:cordechasse/my-ticket-workflow.git vX.Y.Z --squash
+     https://github.com/cordechasse/my-ticket-workflow.git vX.Y.Z --squash
    ```
 
 3. `.claude/scripts/link.sh` : liens des skills et des docs ajoutés, liens morts listés, à

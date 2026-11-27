@@ -241,6 +241,11 @@ projet ◀──subtree pull vX.Y.Z --squash────────────
 3. Dans le projet : § « Montée de version » vers `vX.Y.Z`. Jusque-là, `check.sh` signale le
    paquet modifié et pas encore renvoyé.
 
+Une édition se teste dans une session neuve, lancée dans le worktree de la chore : `cd <worktree>`
+puis `claude`. `claude --worktree` et `EnterWorktree` gardent les hooks, la status line et les
+skills du checkout principal. Un projet d'essai vit hors du dossier scratchpad : Claude Code n'y
+charge ni `CLAUDE.md` ni `.claude/rules/`.
+
 Les autres projets tirent la version taguée à leur rythme.
 
 ## Licence

@@ -8,6 +8,33 @@ Numéros au format `X.Y.Z`, fixés par la migration qu'une montée demande au pr
 
 Chaque version a un tag annoté `vX.Y.Z`. Montée de version : README § « Montée de version ».
 
+## 1.1.0 (2026-11-27)
+
+### Changements
+- RULES § « Créer une release » : le bump remplace le seul numéro de chaque ligne de version, après
+  une indentation éventuelle, et garde la suite de la ligne (`;`, commentaire). Un fichier peut
+  porter plusieurs lignes de version (une par configuration de build), et chacune doit recevoir le
+  nouveau numéro.
+- `ticket-close` : le § « Liste pour le lecteur » de `translations.rules` peut fixer le titre, les
+  colonnes et les clés de la liste des traductions du commentaire au lecteur. Sans lui, la liste
+  garde son texte.
+- FORMAT § « Notes » : le § « Ligne de Traductions » de `translations.rules` peut redéfinir le
+  contenu d'une ligne de « Traductions » de `TICKET.md`. Sans lui, la ligne garde les textes de
+  chaque langue.
+- RULES § « Ticket sans modification de l'app » : la clé se cherche dans le sujet des commits
+  seul, et `docs/`, `.claude/` et `maestro/` sont exclus. Un commit d'outillage, ou un autre ticket
+  qui cite la clé, ne compte plus comme une modification de l'app.
+- `setup_claude_memory.sh` crée le lien de la memory pour le CLI de Claude Code aussi, depuis le
+  checkout principal, avec l'identifiant de projet calculé comme `check.sh`.
+- `ticket-close` publie le paquet seulement quand son arbre diffère du dernier commit de squash
+  du subtree : une chore qui tire seulement une version publiée n'a rien à publier.
+- Exemples, prérequis et renvois de titres corrigés (README, FORMAT, RULES, `check.sh`,
+  `statusline.sh`).
+
+### Migration
+Aucun geste requis. Pour le lien de la memory du CLI, relancer l'installation du projet (son
+appel à `setup_claude_memory.sh`).
+
 ## 1.0.0 (2026-11-27)
 
 ### Changements

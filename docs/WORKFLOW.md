@@ -225,7 +225,7 @@ Branche créée, ticket en-cours
 | Version **à ouvrir** | Version du tracker numérotée, ni publiée, ni ouverte, ni ligne hotfix (Z>0 alors qu'une `X.Y.*` est publiée, sans release `X.Y.*` inférieure ouverte). Sa release se crée au démarrage de son premier ticket. |
 | Version **publiée** | La source `releases.published` dit que le numéro est consommé (tableau ci-dessous). Un tag de build prod n'est qu'une Release Candidate et ne compte pas, ni le statut de la version dans le tracker. |
 | Ticket **intégré** sur une branche | Si la branche du ticket existe encore : sa pointe est contenue dans la branche. Sinon : le sujet d'un commit de la branche cite `#<clé>`, hors revert. Le corps des commits ne compte pas, il cite souvent d'autres tickets. |
-| Numéro de version de l'app | La ligne `releases.version_line` dans `releases.version_file`, modifiée uniquement à la création d'une release (`/ticket-start`, `/version-hotfix`), dans son premier commit. |
+| Numéro de version de l'app | La ligne `releases.version_line` dans `releases.version_file`, ou chacune de ces lignes s'il y en a plusieurs (une par configuration de build), modifiée uniquement à la création d'une release (`/ticket-start`, `/version-hotfix`), dans son premier commit. |
 
 **Contenu d'une release** : les tickets de sa version, `develop` (chores et clôtures) et les releases ouvertes inférieures. Le skill de build staging ne fait avancer que les tickets de la version du build : ceux d'une version inférieure, arrivés par la fusion de sa release, restent tels quels.
 
@@ -288,6 +288,6 @@ Le paquet ne contient ni la configuration du projet, ni l'état de ses services.
 3. **Versions du tracker** : chaque version non publiée porte un nom au format de l'adaptateur (§ 4), ou devient un placeholder.
 4. **Tags de build** : la CI pose un tag au gabarit `releases.build_tag` sur chaque build.
 5. **Versions publiées** : `app-store-connect` demande la lane `app_store_versions` et sa clé d'API. `git-tags` demande le tag `vX.Y.Z` sur chaque version publiée qui a encore sa `release/*` sur origin : sans lui, elle passe pour ouverte.
-6. **Numéro de version** : `releases.version_file` contient la ligne `releases.version_line`.
+6. **Numéro de version** : `releases.version_file` contient au moins une ligne qui commence par `releases.version_line`, indentée ou non, et porte le numéro en chiffres et en points (RULES § « Créer une release »).
 7. **Hook `commit-msg`** : `.claude/scripts/commit-msg-relay.sh` copié dans le dossier des hooks (`git rev-parse --git-path hooks`) par l'installation du projet. Le relais lance le hook du paquet de la branche courante (README du paquet § « Installation »).
 8. **Fichiers locaux** : les memories citées par le paquet (SKILLS § « Fichiers de référence »), et `SKILLS-LOCAL.md`, cité par le `CLAUDE.md` du projet.

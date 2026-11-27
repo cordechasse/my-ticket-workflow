@@ -97,7 +97,7 @@ slug=${source#*/}
 slug=${slug#"$key"_}
 slug=${slug%-"$key"}
 
-# Clé affichée : une clé faite du seul numéro prend un `#` (`#61`), comme en fin de sujet de commit.
+# Clé affichée : une clé faite du seul numéro prend un `#` (`#42`), comme en fin de sujet de commit.
 label=$key
 [[ $key =~ ^[0-9]+$ ]] && label="#$key"
 

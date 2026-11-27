@@ -363,12 +363,12 @@ Sans flow, la section porte à la place 3 lignes :
 
 « Traductions » : module `translations`. Sans lui, la section porte `N/A — module translations absent`, sans relevé ni liste au lecteur.
 
-Création d'un terme, tags, export et branche abandonnée : fichier `translations.rules` de la config.
+Création d'un terme, tags, export, branche abandonnée, contenu d'une ligne de « Traductions » et liste des traductions du commentaire au lecteur (`ticket-close`, étape 5) : fichier `translations.rules` de la config.
 
 « Traductions » informe le lecteur des textes à valider ou traduire. Elle est tenue au fil de l'eau, dès qu'une clé est ajoutée, modifiée ou supprimée, et couvre toute la branche, toutes sessions confondues :
-- une ligne par clé : usage (écran, contexte), texte dans chaque langue (avant → après pour une modification), statut, sujet lié (`Sn`)
+- une ligne par clé : usage (écran, contexte), texte dans chaque langue (avant → après pour une modification), statut, sujet lié (`Sn`). Le § « Ligne de Traductions » de `translations.rules` peut redéfinir ce contenu, par exemple sans les textes quand l'app a beaucoup de langues
 - statut explicite par langue : une valeur vide ou absente est « à traduire »
-- relevé de contrôle : `ruby .claude/scripts/ticket-translations.rb <base>`, avec la base du ticket (`release/X.Y.Z`, ou `poc/<nom>`). Sans argument, le script compare à `develop`, ce qui ne convient qu'à une branche `chore/`. Il lit le dossier des fichiers de localisation dans `translations.localizables`. Il compare clé par clé les fichiers de localisation au point de départ de la branche (`git merge-base`), working tree compris, signale les langues absentes, vides ou restées inchangées quand une autre a changé, et liste les `L10n.missingTranslation` ajoutés ou retirés. Le script fait foi, sans relevé à la main
+- relevé de contrôle : `ruby .claude/scripts/ticket-translations.rb <base>`, avec la base du ticket (`release/X.Y.Z`, ou `poc/<nom>`). Sans argument, le script compare à `releases.integration_branch`, ce qui ne convient qu'à une branche `chore/`. Il lit le dossier des fichiers de localisation dans `translations.localizables`. Il compare clé par clé les fichiers de localisation au point de départ de la branche (`git merge-base`), working tree compris, signale les langues absentes, vides ou restées inchangées quand une autre a changé, et liste les `L10n.missingTranslation` ajoutés ou retirés. Le script fait foi, sans relevé à la main
 - les différences importées d'autres chantiers par la synchronisation des traductions (module `translations`) ne sont pas listées : une phrase les signale
 - les clés existantes réutilisées sans modification sont citées en une ligne, avec les corrections de traduction repérées.
 

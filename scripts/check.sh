@@ -60,7 +60,7 @@ if ! command -v jq >/dev/null; then
 	exit 1
 fi
 if [ ! -d "$PREFIX" ]; then
-	echo "Paquet absent : $PREFIX (README § « Installation »)."
+	echo "Paquet absent : $PREFIX (README § « Installation dans un projet »)."
 	exit 1
 fi
 
@@ -179,7 +179,7 @@ fi
 # Un `.gitignore` qui ignore `vendor/` (gems) ignore aussi le paquet : un fichier ajouté au paquet
 # depuis le projet ne serait pas suivi.
 if git check-ignore -q --no-index "$PREFIX/VERSION"; then
-	report "Paquet ignoré par un .gitignore : ajouter !.claude/vendor/ (README § « Installation »)."
+	report "Paquet ignoré par un .gitignore : ajouter !.claude/vendor/ (README § « Installation dans un projet »)."
 fi
 
 while IFS= read -r file; do
@@ -190,10 +190,10 @@ done < <(find "$PREFIX" -name CLAUDE.md -o -name AGENTS.md)
 # `git-subtree-split` donne le commit d'origine dans le dépôt du paquet.
 squash=$(git log -1 --format=%H --grep="^git-subtree-dir: $PREFIX/*\$" HEAD)
 if [ -z "$squash" ]; then
-	report "Aucun commit de subtree pour $PREFIX (README § « Installation »)."
+	report "Aucun commit de subtree pour $PREFIX (README § « Installation dans un projet »)."
 else
 	if [ "$(git rev-parse "$squash^{tree}")" != "$(git rev-parse "HEAD:$PREFIX")" ]; then
-		report "Paquet modifié dans le projet et pas encore renvoyé (README § « Édition du paquet »)."
+		report "Paquet modifié dans le projet et pas encore renvoyé (README § « Édition du paquet depuis un projet »)."
 	fi
 	split=$(git log -1 --format=%B "$squash" | sed -n 's/^git-subtree-split: //p')
 	version=$(tr -d '[:space:]' <"$PREFIX/VERSION")

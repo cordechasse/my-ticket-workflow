@@ -144,14 +144,15 @@ Avertissement, sans arrêt : une version à ouvrir plus basse que X.Y.Z existe. 
 
 **Confirmation**, un seul formulaire avant toute écriture : version, base (sha court, sujet, date), commit de bump `chore(release): X.Y.Z` (ligne de version) et push sur origin. Il vaut accord pour la création et pour le push. Refus : rien n'est créé.
 
-**Branche et bump**, en un seul appel Bash, `file` et `line` recopiés de `releases.version_file` et `releases.version_line` :
+**Branche et bump**, en un seul appel Bash, `file` et `line` recopiés de `releases.version_file` et `releases.version_line`. Une ligne de version commence par `line`, après une indentation éventuelle, et porte le numéro en chiffres et en points. Le fichier peut en contenir plusieurs (une par configuration de build). Le bump remplace le numéro de chacune et garde la suite de la ligne (`;`, commentaire). Il échoue si le fichier n'a aucune ligne de version, ou si l'une d'elles ne porte pas la nouvelle version (numéro écrit autrement qu'en chiffres) :
 
 ```bash
 v=X.Y.Z base=<base> file='<releases.version_file>' line='<releases.version_line>'
 wt=$(mktemp -d -t "release-$v")
 git worktree add -q --no-track -b "release/$v" "$wt" "$base"
-sed -i '' -E "s/^${line}.*/${line}${v}/" "$wt/$file"
-[ "$(rg -c "^${line}${v}$" "$wt/$file")" = 1 ] || { echo "ÉCHEC : ligne de version non mise à jour"; exit 1; }
+sed -i '' -E "s/^([[:space:]]*${line})[0-9]+(\.[0-9]+)*/\1${v}/" "$wt/$file"
+all=$(rg -c "^[[:space:]]*${line}" "$wt/$file"); new=$(rg -c "^[[:space:]]*${line}${v}([^0-9.]|$)" "$wt/$file")
+[ -n "$all" ] && [ "$all" = "$new" ] || { echo "ÉCHEC : ligne de version non mise à jour"; exit 1; }
 git -C "$wt" commit -q -am "chore(release): $v"
 echo "wt=$wt"; git -C "$wt" log -1 --stat --format='%h %s'
 ```
@@ -308,6 +309,17 @@ git log <ref> --format='%H %s' | rg -e '#<clé>([^0-9]|$)'
 - Retirer les reverts : un sujet qui commence par `Revert "`, et tout commit annulé plus loin (`git log <ref> --grep='This reverts commit <sha complet>' --format=%h` renvoie quelque chose).
 - Aucun commit restant : non intégré.
 
+## Ticket sans modification de l'app
+
+Cause serveur, analyse seule : aucun commit du ticket sur `<ref>` ne touche le code de l'app. Le code exclut l'outillage et les fichiers de session, comme `.claude/scripts/build-fingerprint.sh` : `docs/`, `.claude/` et `maestro/`. La clé se cherche dans le sujet seul, comme au § « Ticket intégré sur une ref » : un corps, ou le sujet d'un autre ticket, peut citer la clé.
+
+```bash
+p='<tracker.key_prefix>' n=<numéro>
+git log <ref> --no-merges --format='%h %s' -- . ':!docs' ':!.claude' ':!maestro' | rg -e "#${p}${n}([^0-9]|\$)" | head -1
+```
+
+Sortie vide : ticket sans modification de l'app.
+
 ## Statuts
 
 Statuts logiques, dans l'ordre où un ticket avance. Leur valeur dans le service est `tracker.states.<statut>`, et l'adaptateur `tracker-<tracker.provider>` § « Écrire un statut » dit comment la poser.
@@ -317,7 +329,7 @@ Statuts logiques, dans l'ordre où un ticket avance. Leur valeur dans le service
 | (initial) | création du ticket |
 | `en-cours` | `ticket-start` |
 | `a-livrer` | `ticket-close`, au push d'une fusion directe (dans une `release/*` ou un `poc/<nom>`), après le commentaire au lecteur, ou à une clôture sans correctif (statut « Rien à faire ») |
-| `dans-un-build` | le skill de build staging, après le statut `Dispo dans la version X.Y.Z+N` (build POC : `X.Y.Z-poc.<nom>+N`), ou `Aucune modification de l'app dans la version X.Y.Z+N` pour un ticket sans commit hors `docs/` |
+| `dans-un-build` | le skill de build staging, après le statut `Dispo dans la version X.Y.Z+N` (build POC : `X.Y.Z-poc.<nom>+N`), ou `Aucune modification de l'app dans la version X.Y.Z+N` pour un ticket sans modification de l'app (§ « Ticket sans modification de l'app ») |
 | `fait` | à la main, par la personne qui valide |
 
 - Un skill fait seulement avancer un ticket, dans l'ordre du tableau. Un ticket déjà au statut visé, ou plus loin, reste tel quel. Un retour en arrière (refus en recette, renvoi en `en-cours`) se fait à la main.

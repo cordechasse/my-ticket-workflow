@@ -31,7 +31,7 @@ atteints par les liens.
 
 ## Prérequis
 
-- Claude Code, `git`, `bash`, `jq`, `yq` de mikefarah en v4, `ruby` (relevé des traductions).
+- Claude Code, `git`, `bash`, `jq`, `yq` de mikefarah en v4, `rg` (ripgrep), `ruby` (relevé des traductions).
 - Tracker : MCP Atlassian (Jira), ou MCP GitHub et `GITHUB_PERSONAL_ACCESS_TOKEN` (issues GitHub).
 - Projet iOS : MobileBuildMCP (builds, simulateur dédié) et Xcode.
 - Modules optionnels (`modules` de la config) : Maestro (`maestro`), Crashlytics par le MCP

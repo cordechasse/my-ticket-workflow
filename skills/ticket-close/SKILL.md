@@ -192,7 +192,7 @@ Avant de rédiger, reprends les commentaires du ticket lus à l'étape 2. Chaque
 Sources, sans recherche dans l'historique git :
 - étapes de reproduction : flows de `maestro/`, section « Reproduction », tests `(recette)`
 - « Ce qui change » d'une `Task` : « Objectif et périmètre » et tests `(recette)`
-- module `translations` : traductions à compléter, « Traductions » de « Notes »
+- module `translations` : liste des traductions, « Traductions » de « Notes »
 - demandes non livrées : tableau de conformité de l'étape 2.
 
 Le commentaire commence par le paragraphe `# Statut`, de texte `En attente de livraison`. Le skill de build staging puis `version-close` remplacent ce texte au fil des livraisons (RULES § « Statuts », « Remplacer un statut »). Le contenu suit sous `# Évolutions/Corrections`.
@@ -288,7 +288,7 @@ La raison d'une exclusion vient de sa source (sujet tranché, commentaire du tic
 
 Le commentaire ne contient ni parcours de non-régression, ni décisions, ni reste à faire hors « Non livré ». Ces points sont le travail du développeur et restent dans le message de clôture. Il ne pose aucune question : tout est décidé avant la clôture. Une question encore ouverte est un reste à faire du formulaire 1.
 
-« Nouvelles traductions à compléter dans POEditor » : module `translations` (`poeditor`). Facultatif : seulement dans la section du problème qui ajoute des clés à traduire par le lecteur (« Traductions » de « Notes »). Une ligne par clé. C'est la seule liste des textes à traduire côté iOS (fichier `translations.rules` de la config, liste destinée au lecteur).
+Liste des traductions : module `translations` (`poeditor`). C'est la seule liste des textes destinée au lecteur, une ligne par clé. Par défaut, elle porte le titre « Nouvelles traductions à compléter dans POEditor », les colonnes du modèle ci-dessus, et les clés à traduire par le lecteur. Le fichier `translations.rules` de la config peut la redéfinir dans son § « Liste pour le lecteur » : titre, colonnes et clés listées. Facultative : seulement dans la section du problème qui a au moins une clé listée (« Traductions » de « Notes »).
 
 ## 6. Audit
 
@@ -298,7 +298,7 @@ Le commentaire ne contient ni parcours de non-régression, ni décisions, ni res
 - [ ] Module `translations` : « Traductions » couvre chaque clé du relevé du script (FORMAT § « Traductions »), et chaque langue non traduite est aussi dans « Non fait ».
 - [ ] Les commentaires de code et le commentaire au lecteur respectent leurs règles (étapes 3 et 5).
 - [ ] Le commentaire au lecteur commence par `# Statut` et `En attente de livraison`, puis `# Évolutions/Corrections` avec une section par problème corrigé (« Livré », puis « Recette » au format de son cas), ou `## Ce qui change` pour une `Task` sans défaut, puis `# Non livré` s'il y a lieu, et rien d'autre.
-- [ ] Module `translations` : chaque clé à traduire par le lecteur est dans « Nouvelles traductions à compléter dans POEditor » de sa section.
+- [ ] Module `translations` : chaque clé de la liste des traductions (étape 5, défaut ou § « Liste pour le lecteur » de `translations.rules`) est dans cette liste, dans sa section.
 - [ ] Ticket `Bug` : chaque flow de reproduction est vert au rejeu de l'étape 1, sinon il est dans « Non fait », comme le rejeu non fait et le bug non reproduit. Un correctif `Sans test unitaire` est dans « Non fait », avec sa raison.
 - [ ] Revue (étape 2) : chaque exigence partielle, absente ou exclue, chaque constat non corrigé et chaque vérification ciblée non faite est dans « Non fait ». Une revue sautée pour un lot sans `✓` y est aussi. Chaque demande venue du ticket et non livrée est aussi sous `# Non livré` du commentaire au lecteur.
 
@@ -323,7 +323,7 @@ Procédure de commit : FORMAT § « Commits ».
 
 ### Paquet partagé
 
-Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEAD -- .claude/vendor/my-ticket-workflow` échoue. Sinon, section sautée. Le paquet est publié avant la fusion dans `develop` : un autre projet ne tire qu'une version taguée, et `develop` ne porte jamais une édition du paquet non renvoyée.
+Chore dont la branche modifie le paquet : son arbre diffère du dernier commit de squash du subtree, comme au contrôle de `.claude/scripts/check.sh`. `git log -1 --format=%h --grep='^git-subtree-dir: .claude/vendor/my-ticket-workflow/*$' HEAD` donne ce commit `<squash>`, puis `git diff --quiet <squash> HEAD:.claude/vendor/my-ticket-workflow` échoue. Sinon, section sautée : une chore qui tire seulement une version publiée (`subtree pull`) n'a rien à publier. Le paquet est publié avant la fusion dans `develop` : un autre projet ne tire qu'une version taguée, et `develop` ne porte jamais une édition du paquet non renvoyée.
 
 `<préfixe>` : `.claude/vendor/my-ticket-workflow`. `<url>`, pour la lecture : `package.url` de la config, sinon la constante `DEFAULT_PACKAGE_URL` de `.claude/scripts/check.sh`. `<push_url>`, pour le push : `package.push_url`, sinon `package.url` si elle est définie (les deux désignent le même dépôt), sinon `DEFAULT_PACKAGE_PUSH_URL`. Une commande git par appel. Un chemin donné par une commande (`<pkg>`) est recopié en clair dans les suivantes : une variable du shell ne survit pas d'un appel à l'autre.
 
@@ -333,7 +333,7 @@ Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEA
    - tag égal à `VERSION`, sans ce commit : `X.Y.Z` est monté depuis ce tag, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste)
    - `VERSION` plus haut que le tag : version écrite par une clôture interrompue, `X.Y.Z` = `VERSION`
    - tag plus haut que `VERSION` : un autre projet a publié depuis le dernier `subtree pull`. Arrêt, sans commit ni push : la chore monte d'abord vers ce tag (README du paquet § « Montée de version », migration comprise), puis la clôture reprend. Le numéro tient alors compte des deux éditions, et aucune version n'est publiée deux fois.
-2. **Version** : entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Rien n'est commité à ce point.
+2. **Version** : entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline --no-merges origin/develop..HEAD -- <préfixe>`, sans la fusion du `subtree pull`), et `VERSION`. Rien n'est commité à ce point.
 3. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis le commit de version et les gestes des points 4 à 6. Refus : `git restore <préfixe>/CHANGELOG.md <préfixe>/VERSION`, et la clôture s'arrête avant la fusion, rien n'est poussé. Accord : commit du paquet seul, `docs: version X.Y.Z` (FORMAT § « Commits »). Rien à commiter (relance après un arrêt) : pas de commit.
 4. **Renvoi** : `git subtree push -q --prefix <préfixe> <push_url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet. `-q` coupe la progression, une ligne par commit du projet parcouru (environ 30 s pour 4 000 commits).
 5. **Publication**, dans un clone temporaire du paquet, sur sa branche `main`. D'abord, le tag ne doit pas exister : `git ls-remote --tags <url> refs/tags/vX.Y.Z` a une sortie vide. Sortie non vide : un autre projet a publié ce numéro entre-temps. Arrêt avant le clone : la chore monte vers ce tag comme au point 1 (tag plus haut que `VERSION`), puis la clôture reprend au point 1, avec un nouveau commit de version au point 3. Ensuite :

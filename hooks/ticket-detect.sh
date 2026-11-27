@@ -9,6 +9,15 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 # des conversations coupées depuis plus de 2 jours sont purgés.
 sessions_dir="$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)/claude-sessions"
 [ -d "$sessions_dir" ] && find "$sessions_dir" -type f -mtime +2 -delete
+
+# Liens du paquet : un pull qui apporte un skill ou une doc du paquet ne crée pas son lien, et le
+# skill reste invisible sans message. Une seule ligne, même sans session de ticket.
+link_script="$root/.claude/vendor/my-ticket-workflow/scripts/link.sh"
+if [ -x "$link_script" ]; then
+  link_issues=$("$link_script" --check 2>/dev/null | wc -l | tr -d ' ')
+  [ "$link_issues" -gt 0 ] && echo "LIENS DU PAQUET : $link_issues écart(s) trouvé(s) par link.sh --check. Signale-le à l'utilisateur en une ligne et propose de lancer .claude/scripts/link.sh."
+fi
+
 branch=$(git -C "$root" branch --show-current 2>/dev/null)
 [ -n "$branch" ] || exit 0
 

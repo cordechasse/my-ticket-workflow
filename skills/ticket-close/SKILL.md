@@ -325,21 +325,31 @@ Procédure de commit : FORMAT § « Commits ».
 
 Chore dont la branche modifie le paquet : `git diff --quiet origin/develop...HEAD -- .claude/vendor/my-ticket-workflow` échoue. Sinon, section sautée. Le paquet est publié avant la fusion dans `develop` : un autre projet ne tire qu'une version taguée, et `develop` ne porte jamais une édition du paquet non renvoyée.
 
-`<préfixe>` : `.claude/vendor/my-ticket-workflow`. `<url>` : constante `PACKAGE_URL` de `.claude/scripts/check.sh`. Une commande git par appel.
+`<préfixe>` : `.claude/vendor/my-ticket-workflow`. `<url>`, pour la lecture : `package.url` de la config, sinon la constante `DEFAULT_PACKAGE_URL` de `.claude/scripts/check.sh`. `<push_url>`, pour le push : `package.push_url`, sinon `DEFAULT_PACKAGE_PUSH_URL`. Une commande git par appel.
 
-1. **Version** : `X.Y.Z` depuis `<préfixe>/VERSION`, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste). Entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Commit du paquet seul : `docs: version X.Y.Z`.
-2. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis les gestes des points 3 à 5. Refus : la clôture s'arrête avant la fusion, rien n'est poussé.
-3. **Renvoi** : `git subtree push -q --prefix <préfixe> <url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet. `-q` coupe la progression, une ligne par commit du projet parcouru (environ 20 s pour 4 000 commits).
-4. **Publication**, dans un clone temporaire du paquet :
+1. **Dernière version publiée** : `git ls-remote --tags --refs <url> 'refs/tags/v*'`, le plus haut tag selon `sort -V`, comparé à `<préfixe>/VERSION` :
+   - aucun tag : première publication, `X.Y.Z` = `VERSION`
+   - tag égal à `VERSION` : `X.Y.Z` est monté depuis ce tag, selon les règles en tête de `<préfixe>/CHANGELOG.md` (majeur : migration requise, mineur : ajout sans obligation, correctif : aucun geste)
+   - `VERSION` plus haut que le tag : version écrite par une clôture interrompue, `X.Y.Z` = `VERSION`
+   - tag plus haut que `VERSION` : un autre projet a publié depuis le dernier `subtree pull`. Arrêt, sans commit ni push : la chore monte d'abord vers ce tag (README du paquet § « Montée de version », migration comprise), puis la clôture reprend. Le numéro tient alors compte des deux éditions, et aucune version n'est publiée deux fois.
+2. **Version** : entrée `## X.Y.Z (AAAA-MM-JJ)` du CHANGELOG, « Changements » et « Migration », écrite ou complétée d'après les commits du paquet (`git log --oneline origin/develop..HEAD -- <préfixe>`), et `VERSION`. Commit du paquet seul : `docs: version X.Y.Z`.
+3. **Formulaire du paquet** : version, entrée du CHANGELOG en entier, puis les gestes des points 4 à 6. Refus : la clôture s'arrête avant la fusion, rien n'est poussé.
+4. **Renvoi** : `git subtree push -q --prefix <préfixe> <push_url> <branche>`. Il pousse la branche `<branche>` dans le dépôt du paquet. `-q` coupe la progression, une ligne par commit du projet parcouru (environ 20 s pour 4 000 commits).
+5. **Publication**, dans un clone temporaire du paquet, sur sa branche `main` :
    ```bash
-   pkg=$(mktemp -d -t paquet) && git clone -q <url> "$pkg" && echo "pkg=$pkg"
+   pkg=$(mktemp -d -t paquet) && git clone -q -b main <url> "$pkg" && echo "pkg=$pkg"
+   git -C "$pkg" rev-parse -q --verify refs/tags/vX.Y.Z
    git -C "$pkg" merge --no-ff origin/<branche> -m "Merge branch '<branche>'"
    git -C "$pkg" tag -a vX.Y.Z -m "Version X.Y.Z"
-   git -C "$pkg" push origin main vX.Y.Z
-   git -C "$pkg" push origin --delete <branche>
+   git -C "$pkg" push --atomic <push_url> main vX.Y.Z
+   git -C "$pkg" push <push_url> --delete <branche>
    ```
-   Conflit (le paquet a reçu la version d'un autre projet) : `git -C "$pkg" merge --abort`, arrêt, clone gardé et fichiers présentés. Fin : `rm -rf "$pkg"`.
-5. **Retour** : `git subtree pull -q --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`. Le contrôle est muet, sauf le hook `commit-msg` du checkout, que le `make setup` (ou l'équivalent du projet) recopie après la fusion.
+   - Tag trouvé par `rev-parse` (code 0) : un autre projet a publié ce numéro entre-temps. Arrêt avant la fusion, `rm -rf "$pkg"`. La chore monte vers ce tag comme au point 1 (tag plus haut que `VERSION`), puis la clôture reprend au point 1 : le commit de version du point 2 est à refaire.
+   - Conflit (le paquet a reçu la version d'un autre projet) : `git -C "$pkg" merge --abort`, arrêt, clone gardé et fichiers présentés.
+   - Push refusé : `--atomic` ne publie ni `main` ni le tag. Arrêt, clone gardé, erreur présentée.
+
+   Fin : `rm -rf "$pkg"`.
+6. **Retour** : `git subtree pull -q --prefix <préfixe> <url> vX.Y.Z --squash -m "Merge du paquet my-ticket-workflow vX.Y.Z"`, puis `.claude/scripts/link.sh`, qui finit par le contrôle. Il est muet, sauf un hook `commit-msg` installé avant le relais, que le `make setup` du projet (ou son équivalent) remplace après la fusion.
 
 ## 8. Intégration
 

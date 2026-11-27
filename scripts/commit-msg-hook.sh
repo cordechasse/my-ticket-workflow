@@ -27,12 +27,11 @@ subject="${lines[0]}"
 
 # Préfixe de la clé d'un ticket, `tracker.key_prefix` de la config du workflow : `APP-` donne la
 # clé `#APP-12` en fin de sujet, un préfixe vide donne `#12`. Sans `yq` ou sans config, le préfixe
-# est vide et la clé d'une branche à préfixe n'est pas vérifiée : une ligne le signale.
+# est vide et la clé d'une branche à préfixe n'est pas vérifiée, sans message : le hook est partagé
+# par tous les worktrees, et une branche qui n'a pas encore reçu la config afficherait un
+# avertissement à chaque commit. `check.sh` signale une config absente.
 config="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/workflow.yml"
-if ! prefix=$(yq -r '.tracker.key_prefix // ""' "$config" 2>/dev/null); then
-	prefix=""
-	echo "⚠️  yq ou .claude/workflow.yml introuvable : clé du ticket non vérifiée." >&2
-fi
+prefix=$(yq -r '.tracker.key_prefix // ""' "$config" 2>/dev/null) || prefix=""
 
 warnings=()
 

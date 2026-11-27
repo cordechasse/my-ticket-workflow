@@ -180,7 +180,8 @@ modules:
 Chaque clé est décrite dans `.claude/workflow/FORMAT.md` § « Configuration » et dans les
 adaptateurs qu'elle désigne. Deux clés facultatives remplacent le dépôt du paquet, pour un fork
 ou un essai sur un dépôt jetable : `package.url` pour la lecture, en HTTPS, et `package.push_url`
-pour le push. Sans elles, les constantes de `.claude/scripts/check.sh` s'appliquent.
+pour le push. Les deux désignent le même dépôt : sans `package.push_url`, le push prend
+`package.url`. Sans elles, les constantes de `.claude/scripts/check.sh` s'appliquent.
 `workflow/config-schema.yml` liste les clés permises, obligatoires
 ou requises par un module, et les valeurs permises.
 
